@@ -1,0 +1,1 @@
+Average number of frame per video: 41.24077357978845

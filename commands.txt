@@ -1,0 +1,10 @@
+JESTER PREPROCESSING
+Generate n_frames files using:
+python3 utils/n_frames_jester.py datasets/jester
+
+Generate annotation file in json format similar to ActivityNet using:
+python3 utils/jester_json.py annotation_Jester
+
+
+TESTING
+python3 main.py --root_path ./ --video_path datasets/jester --annotation_path annotation_Jester/jester.json --result_path results --pretrain_path pretrained_models/jester_resnext_101_RGB_16_best.pth --dataset jester --n_classes 27 --n_finetune_classes 27 --model resnext --groups 3 --sample_duration 16 --downsample 1 --batch_size 64 --n_threads 16 --test --model_depth 101 --no_train --no_val
