@@ -115,3 +115,6 @@ datasets/**/
 
 # pretrained models
 .pth
+
+# results directory
+/results
