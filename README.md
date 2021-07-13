@@ -223,7 +223,7 @@ python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/jester/RG
 ## Training
 
 
-###ChaLearn LAP IsoGD
+### ChaLearn LAP IsoGD
 
 ```bash
 MOBILENET V2
