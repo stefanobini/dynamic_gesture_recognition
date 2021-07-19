@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from models import c3d, squeezenet, mobilenet, shufflenet, mobilenetv2, shufflenetv2, resnext, resnet, mobilenetv2_2d
+from models import c3d, squeezenet, mobilenet, shufflenet, mobilenetv2, shufflenetv2, resnext, resnet, mobilenetv2_2d, resnext_2d
 
 
 def generate_model(opt):
@@ -193,11 +193,10 @@ def generate_model(opt):
     return model, model.parameters()
 
 def generate_model_2d(opt):
-    assert opt.model in ['c3d', 'squeezenet', 'mobilenet', 'resnext', 'resnet',
-                         'shufflenet', 'mobilenetv2', 'shufflenetv2']
+    assert opt.model in ['mobilenetv2_2d', 'resnext_2d']
 
 
-    if opt.model == 'mobilenetv2':        
+    if opt.model == 'mobilenetv2_2d':        
         from models.mobilenetv2_2d import get_fine_tuning_parameters
         model = mobilenetv2_2d.get_model(
             num_classes=opt.n_classes,
@@ -205,16 +204,18 @@ def generate_model_2d(opt):
             width_mult=opt.width_mult,
             sample_duration=opt.sample_duration,
             consensus_type=opt.cons_type)
-    elif opt.model == 'resnext':
-        assert opt.model_depth in [50, 101, 152]
-        from models.resnext import get_fine_tuning_parameters
+    elif opt.model == 'resnext_2d':
+        assert opt.model_depth in [101]
+        from models.resnext_2d import get_fine_tuning_parameters
         if opt.model_depth == 101:
-            model = resnext.resnext101(
+            model = resnext_2d.get_model(
+                arch=opt.model_depth,
                 num_classes=opt.n_classes,
                 shortcut_type=opt.resnet_shortcut,
                 cardinality=opt.resnext_cardinality,
                 sample_size=opt.sample_size,
-                sample_duration=opt.sample_duration)
+                sample_duration=opt.sample_duration,
+                consensus_type=opt.cons_type)
 
     if not opt.no_cuda:
         model = model.cuda()
@@ -234,7 +235,7 @@ def generate_model_2d(opt):
             if opt.test or opt.ft_portion == 'none':
                 return model, model.parameters()
             
-            if opt.model in  ['mobilenet', 'mobilenetv2', 'shufflenet', 'shufflenetv2']:
+            if opt.model in  ['mobilenet', 'mobilenetv2', 'shufflenet', 'shufflenetv2', 'mobilenetv2_2d']:
                 model.module.classifier = nn.Sequential(
                                 nn.Dropout(0.9),
                                 nn.Linear(model.module.classifier[1].in_features, opt.n_finetune_classes))
@@ -265,7 +266,7 @@ def generate_model_2d(opt):
             assert opt.arch == pretrain['arch']
             model.load_state_dict(pretrain['state_dict'])
 
-            if opt.model in  ['mobilenet', 'mobilenetv2', 'shufflenet', 'shufflenetv2']:
+            if opt.model in  ['mobilenet', 'mobilenetv2', 'shufflenet', 'shufflenetv2', 'mobilenetv2_2d']:
                 model.module.classifier = nn.Sequential(
                                 nn.Dropout(0.9),
                                 nn.Linear(model.module.classifier[1].in_features, opt.n_finetune_classes)

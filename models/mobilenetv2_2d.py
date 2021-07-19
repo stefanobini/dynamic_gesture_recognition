@@ -283,8 +283,9 @@ class MobileNetV2_2D(nn.Module):
     
     def forward(self, x: Tensor) -> Tensor:
         x1 = list()
-        for i in range(x.shape[0]):
-            x1.append(self.cnns[i](x[i]))
+        # iterate on the frames
+        for i in range(x.shape[1]):
+            x1.append(self.cnns[i](x[:, i, :, :, :]))
         
         if self.consensus_type == 'MLP':
             x = torch.cat(x1)
@@ -292,11 +293,13 @@ class MobileNetV2_2D(nn.Module):
             x = return_MLP(self.consensus_type, self.sample_duration, self.num_classes)(x)
         elif self.consensus_type == 'avg':
             x = torch.stack(x1)
-            #print('AVG shape: {}'.format(x.shape))
-            x = x.mean(dim=0, keepdim=True)
+            # print('AVG shape: {}'.format(x.shape))
+            # x = x.mean(dim=0, keepdim=True)
+            x = x.mean(dim=0)
+            # print('AVG shape: {}'.format(x.shape))
         elif self.consensus_type == 'max':
             x = torch.stack(x1)
-            x = x.mean(dim=0, keepdim=True)
+            x = x.mean(dim=0)
         else:
             output = None
         # print('Output size: {}'.format(x.shape))

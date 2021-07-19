@@ -55,6 +55,7 @@ if __name__ == '__main__':
     else:
         model, parameters = generate_model_2d(opt)
         input_shape = (opt.sample_duration, 3, opt.sample_size, opt.sample_size)
+    # print('Input model shape: ', input_shape)
     model_sum = summary(model.module, input_shape)
 
     criterion = nn.CrossEntropyLoss()
@@ -120,8 +121,11 @@ if __name__ == '__main__':
             dampening=dampening,
             weight_decay=opt.weight_decay,
             nesterov=opt.nesterov)
-        scheduler = lr_scheduler.ReduceLROnPlateau(
-            optimizer, 'max', patience=opt.lr_patience)
+        if opt.lr_steps is None:
+            scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=opt.lr_patience)
+        else:
+            scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=opt.lr_steps, gamma=0.1)
+        
     if not opt.no_val:
         spatial_transform = Compose([
             # Scale_original(opt.sample_size),        # insert by beis
@@ -173,7 +177,10 @@ if __name__ == '__main__':
         if not opt.no_val:
             validation_loss, prec1 = val_epoch(i, val_loader, model, criterion, opt,
                                         val_logger)
-            scheduler.step(prec1)   # check if the prec1 is increased
+            if opt.lr_steps is None:
+                scheduler.step(prec1)   # check if the prec1 is increased
+            else:
+                scheduler.step()
             is_best = prec1 > best_prec1
             best_prec1 = max(prec1, best_prec1)
             state = {
