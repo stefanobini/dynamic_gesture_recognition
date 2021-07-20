@@ -255,14 +255,8 @@ class MLPmodule(torch.nn.Module):
         return input
 
 
-def return_MLP(relation_type,num_frames, num_class):
-    MLPmodel = MLPmodule(num_frames, num_class)
-
-    return MLPmodel
-
-
 class MobileNetV2_2D(nn.Module):
-    def __init__(self, num_classes=249, sample_size=112, width_mult=1., sample_duration=16, consensus_type='avg'):
+    def __init__(self, num_classes=249, sample_size=112, width_mult=1., sample_duration=16, aggr_type='avg'):
         super(MobileNetV2_2D, self).__init__()
         self.sample_duration = sample_duration
         self.num_classes = num_classes
@@ -274,11 +268,20 @@ class MobileNetV2_2D(nn.Module):
                 mobilenet_v2(pretrained = True, num_classes = num_classes))
             self.cnns.append(cnn)
         
-        # self.cnns = nn.ModuleList([mobilenet_v2(pretrained = True) for i in range(self.sample_duration)])
-        
-        # print(self.cnns[0])
-        
-        self.consensus_type = consensus_type
+        self.aggr_type = aggr_type
+        self.aggregator = None
+        assert(self.aggr_type = ['MLP', 'LSTM', 'avg', 'max'])
+        if self.aggr_type == 'MLP':
+            self.aggregator = nn.Sequential(
+                nn.Dropout(0.2),
+                nn.Linear(self.num_classes * self.sample_duration, self.num_classes),
+            )
+        elif self.aggr_type == 'LSTM':
+            self.aggregator = nn.Sequential(
+                nn.LSTM(self.num_classes, self.num_classes),
+                nn.Dropout(0.2),
+                nn.Linear(self.num_classes * self.sample_duration, self.num_classes),
+            )
         
     
     def forward(self, x: Tensor) -> Tensor:
@@ -287,19 +290,23 @@ class MobileNetV2_2D(nn.Module):
         for i in range(x.shape[1]):
             x1.append(self.cnns[i](x[:, i, :, :, :]))
         
-        if self.consensus_type == 'MLP':
+        if self.aggr_type == 'MLP':
             x = torch.cat(x1)
             # print('MLP shape: {}'.format(x.shape))
-            x = return_MLP(self.consensus_type, self.sample_duration, self.num_classes)(x)
-        elif self.consensus_type == 'avg':
+            x = self.aggregator(x)
+        elif self.aggr_type == 'LSTM':
+            hidden = torch.randn(x1[0])
+            for input in x1:
+                x, hidden = self.aggregator(input, hidden)
+        elif self.aggr_type == 'avg':
             x = torch.stack(x1)
             # print('AVG shape: {}'.format(x.shape))
             # x = x.mean(dim=0, keepdim=True)
             x = x.mean(dim=0)
             # print('AVG shape: {}'.format(x.shape))
-        elif self.consensus_type == 'max':
+        elif self.aggr_type == 'max':
             x = torch.stack(x1)
-            x = x.mean(dim=0)
+            x = x.max(dim=0)
         else:
             output = None
         # print('Output size: {}'.format(x.shape))
@@ -312,7 +319,7 @@ def get_fine_tuning_parameters(model, ft_portion):
 
     elif ft_portion == "last_layer":
         ft_module_names = []
-        ft_module_names.append('classifier')
+        ft_module_names.append('aggregator')
 
         parameters = []
         for k, v in model.named_parameters():

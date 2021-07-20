@@ -203,7 +203,7 @@ def generate_model_2d(opt):
             sample_size=opt.sample_size,
             width_mult=opt.width_mult,
             sample_duration=opt.sample_duration,
-            consensus_type=opt.cons_type)
+            aggr_type=opt.aggr_type)
     elif opt.model == 'resnext_2d':
         assert opt.model_depth in [101]
         from models.resnext_2d import get_fine_tuning_parameters
@@ -215,7 +215,7 @@ def generate_model_2d(opt):
                 cardinality=opt.resnext_cardinality,
                 sample_size=opt.sample_size,
                 sample_duration=opt.sample_duration,
-                consensus_type=opt.cons_type)
+                aggr_type=opt.aggr_type)
 
     if not opt.no_cuda:
         model = model.cuda()
@@ -235,28 +235,24 @@ def generate_model_2d(opt):
             if opt.test or opt.ft_portion == 'none':
                 return model, model.parameters()
             
-            if opt.model in  ['mobilenet', 'mobilenetv2', 'shufflenet', 'shufflenetv2', 'mobilenetv2_2d']:
-                model.module.classifier = nn.Sequential(
+            if opt.aggr_type == 'MLP':
+                model.module.aggregator = nn.Sequential(
                                 nn.Dropout(0.9),
-                                nn.Linear(model.module.classifier[1].in_features, opt.n_finetune_classes))
-                model.module.classifier = model.module.classifier.cuda()
-            elif opt.model == 'squeezenet':
-                model.module.classifier = nn.Sequential(
-                                nn.Dropout(p=0.5),
-                                nn.Conv3d(model.module.classifier[1].in_channels, opt.n_finetune_classes, kernel_size=1),
-                                nn.ReLU(inplace=True),
-                                nn.AvgPool3d((1,4,4), stride=1))
-                model.module.classifier = model.module.classifier.cuda()
+                                nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes))
+                model.module.aggregator = model.module.aggregator.cuda()
+            elif opt.aggr_type == 'LSTM':
+                self.aggregator = nn.Sequential(
+                    nn.LSTM(self.num_classes, self.num_classes),
+                    nn.Dropout(0.9),
+                    nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes),
+                )
+                model.module.aggregator = model.module.aggregator.cuda()
+            '''
             else:
-                '''
-                model.module.fc = nn.Sequential(
-                                nn.Dropout(p=0.5), 
-                                nn.Linear(model.module.fc.in_features, opt.n_finetune_classes))
-                '''
-                model.module.fc = nn.Linear(model.module.fc.in_features, opt.n_finetune_classes)
-                #'''
-                model.module.fc = model.module.fc.cuda()
-
+                model.module.aggregator = nn.Linear(model.module.aggregator.in_features, opt.n_finetune_classes)
+                model.module.aggregator = model.module.aggregator.cuda()
+            '''
+            
             parameters = get_fine_tuning_parameters(model, opt.ft_portion)
             return model, parameters
     else:
@@ -266,26 +262,27 @@ def generate_model_2d(opt):
             assert opt.arch == pretrain['arch']
             model.load_state_dict(pretrain['state_dict'])
 
-            if opt.model in  ['mobilenet', 'mobilenetv2', 'shufflenet', 'shufflenetv2', 'mobilenetv2_2d']:
-                model.module.classifier = nn.Sequential(
+            if opt.test or opt.ft_portion == 'none':
+                return model, model.parameters()
+            
+            if opt.aggr_type == 'MLP':
+                model.module.aggregator = nn.Sequential(
                                 nn.Dropout(0.9),
-                                nn.Linear(model.module.classifier[1].in_features, opt.n_finetune_classes)
-                                )
-            elif opt.model == 'squeezenet':
-                model.module.classifier = nn.Sequential(
-                                nn.Dropout(p=0.5),
-                                nn.Conv3d(model.module.classifier[1].in_channels, opt.n_finetune_classes, kernel_size=1),
-                                nn.ReLU(inplace=True),
-                                nn.AvgPool3d((1,4,4), stride=1))
+                                nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes))
+                model.module.aggregator = model.module.aggregator.cuda()
+            elif opt.aggr_type == 'LSTM':
+                self.aggregator = nn.Sequential(
+                    nn.LSTM(self.num_classes, self.num_classes),
+                    nn.Dropout(0.9),
+                    nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes),
+                )
+                model.module.aggregator = model.module.aggregator.cuda()
+            '''
             else:
-                '''
-                model.module.fc = nn.Sequential(
-                                nn.Dropout(p=0.8), 
-                                nn.Linear(model.module.fc.in_features, opt.n_finetune_classes))
-                '''
-                model.module.fc = nn.Linear(model.module.fc.in_features, opt.n_finetune_classes)
-                #'''
-
+                model.module.aggregator = nn.Linear(model.module.aggregator.in_features, opt.n_finetune_classes)
+                model.module.aggregator = model.module.aggregator.cuda()
+            '''
+            
             parameters = get_fine_tuning_parameters(model, opt.ft_begin_index)
             return model, parameters
 

@@ -398,11 +398,20 @@ class ResNeXt_2D(nn.Module):
                 resnet101(pretrained = True, progress = False, num_classes = self.num_classes))
             self.cnns.append(cnn)
         
-        # self.cnns = nn.ModuleList([mobilenet_v2(pretrained = True) for i in range(self.sample_duration)])
-        
-        # print(self.cnns[0])
-        
         self.consensus_type = consensus_type
+        self.aggregator = None
+        assert(self.consensus_type = ['MLP', 'LSTM', 'avg', 'max'])
+        if self.consensus_type == 'MLP':
+            self.aggregator = nn.Sequential(
+                nn.Dropout(0.2),
+                nn.Linear(self.num_classes * self.sample_duration, self.num_classes),
+            )
+        elif self.consensus_type == 'LSTM':
+            self.aggregator = nn.Sequential(
+                nn.LSTM(self.num_classes, self.num_classes)
+                nn.Dropout(0.2),
+                nn.Linear(self.num_classes * self.sample_duration, self.num_classes),
+            )
         
     
     def forward(self, x: Tensor) -> Tensor:
@@ -414,7 +423,11 @@ class ResNeXt_2D(nn.Module):
         if self.consensus_type == 'MLP':
             x = torch.cat(x1)
             # print('MLP shape: {}'.format(x.shape))
-            x = return_MLP(self.consensus_type, self.sample_duration, self.num_classes)(x)
+            x = self.aggregator(x)
+        elif self.consensus_type == 'LSTM':
+            hidden = torch.randn(x1[0])
+            for input in x1:
+                x, hidden = self.aggregator(input, hidden)
         elif self.consensus_type == 'avg':
             x = torch.stack(x1)
             # print('AVG shape: {}'.format(x.shape))
@@ -423,7 +436,7 @@ class ResNeXt_2D(nn.Module):
             # print('AVG shape: {}'.format(x.shape))
         elif self.consensus_type == 'max':
             x = torch.stack(x1)
-            x = x.mean(dim=0)
+            x = x.max(dim=0)
         else:
             output = None
         # print('Output size: {}'.format(x.shape))
@@ -436,7 +449,7 @@ def get_fine_tuning_parameters(model, ft_portion):
 
     elif ft_portion == "last_layer":
         ft_module_names = []
-        ft_module_names.append('classifier')
+        ft_module_names.append('aggregator')
 
         parameters = []
         for k, v in model.named_parameters():
