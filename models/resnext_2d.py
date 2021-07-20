@@ -408,7 +408,7 @@ class ResNeXt_2D(nn.Module):
             )
         elif self.consensus_type == 'LSTM':
             self.aggregator = nn.Sequential(
-                nn.LSTM(self.num_classes, self.num_classes)
+                nn.LSTM(self.num_classes, self.num_classes),
                 nn.Dropout(0.2),
                 nn.Linear(self.num_classes * self.sample_duration, self.num_classes),
             )
