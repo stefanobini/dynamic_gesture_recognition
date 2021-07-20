@@ -9,9 +9,8 @@ class Identity(torch.nn.Module):
 
 class SegmentConsensus(torch.autograd.Function):
 
-    def __init__(self, consensus_type, dim=0):
+    def __init__(self, consensus_type):
         self.consensus_type = consensus_type
-        self.dim = dim
         self.shape = None
     
     @staticmethod
@@ -19,9 +18,9 @@ class SegmentConsensus(torch.autograd.Function):
         print('Forward input shape: {}'.format(input_tensor.shape))
         self.shape = input_tensor.size()
         if self.consensus_type == 'avg':
-            output = input_tensor.mean(dim=self.dim, keepdim=True)
+            output = input_tensor.mean(1, keepdim=False)
         elif self.consensus_type == 'max':
-            output = input_tensor.max(dim=self.dim, keepdim=True)
+            output = input_tensor.max(1, keepdim=False)
         else:
             output = None
         self.save_for_backward(output)
@@ -34,7 +33,7 @@ class SegmentConsensus(torch.autograd.Function):
         grad_in = self.saved_tensors
         
         if self.consensus_type in ['avg', 'max']:
-            grad_in = grad_in.expand(self.shape) / float(self.shape[self.dim])
+            grad_in = grad_in.expand(self.shape) / float(self.shape[1])
         else:
             grad_in = None
         
@@ -44,12 +43,25 @@ class SegmentConsensus(torch.autograd.Function):
 
 class ConsensusModule(torch.nn.Module):
 
-    def __init__(self, consensus_type, dim=0):
+    def __init__(self, consensus_type, sample_duration, n_class):
         super(ConsensusModule, self).__init__()
         assert(consensus_type in ['avg', 'max'])
         self.consensus_type = consensus_type
-        self.dim = dim
-        self.consensus = SegmentConsensus(self.consensus_type, self.dim)
+        self.consensus = SegmentConsensus(self.consensus_type)
+        
+        assert(self.aggr_type in ['MLP', 'LSTM', 'avg', 'max'])
+        if self.aggr_type == 'MLP':
+            self.aggregator = nn.Sequential(
+                # nn.Dropout(0.2),
+                nn.ReLU(),
+                nn.Linear(self.num_classes * self.sample_duration, self.num_classes)
+            )
+        elif self.aggr_type == 'LSTM':
+            self.aggregator = nn.Sequential(
+                nn.LSTM(self.num_classes, self.num_classes),
+                # nn.Dropout(0.2),
+                # nn.Linear(self.num_classes * self.sample_duration, self.num_classes),
+            )
 
     def forward(self, input):
         # input = torch.stack(input)

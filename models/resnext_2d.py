@@ -403,14 +403,15 @@ class ResNeXt_2D(nn.Module):
         assert(self.consensus_type in ['MLP', 'LSTM', 'avg', 'max'])
         if self.consensus_type == 'MLP':
             self.aggregator = nn.Sequential(
-                nn.Dropout(0.2),
-                nn.Linear(self.num_classes * self.sample_duration, self.num_classes),
+                # nn.Dropout(0.2),
+                nn.ReLU(),
+                nn.Linear(self.num_classes * self.sample_duration, self.num_classes)
             )
         elif self.consensus_type == 'LSTM':
             self.aggregator = nn.Sequential(
                 nn.LSTM(self.num_classes, self.num_classes),
-                nn.Dropout(0.2),
-                nn.Linear(self.num_classes * self.sample_duration, self.num_classes),
+                # nn.Dropout(0.2),
+                # nn.Linear(self.num_classes * self.sample_duration, self.num_classes),
             )
         
     

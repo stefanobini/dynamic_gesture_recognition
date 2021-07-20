@@ -273,42 +273,44 @@ class MobileNetV2_2D(nn.Module):
         assert(self.aggr_type in ['MLP', 'LSTM', 'avg', 'max'])
         if self.aggr_type == 'MLP':
             self.aggregator = nn.Sequential(
-                nn.Dropout(0.2),
-                nn.Linear(self.num_classes * self.sample_duration, self.num_classes),
+                # nn.Dropout(0.2),
+                nn.ReLU(),
+                nn.Linear(self.num_classes * self.sample_duration, self.num_classes)
             )
         elif self.aggr_type == 'LSTM':
             self.aggregator = nn.Sequential(
                 nn.LSTM(self.num_classes, self.num_classes),
-                nn.Dropout(0.2),
-                nn.Linear(self.num_classes * self.sample_duration, self.num_classes),
+                # nn.Dropout(0.2),
+                # nn.Linear(self.num_classes * self.sample_duration, self.num_classes),
             )
         
     
-    def forward(self, x: Tensor) -> Tensor:
-        x1 = list()
-        # iterate on the frames
-        for i in range(x.shape[1]):
-            x1.append(self.cnns[i](x[:, i, :, :, :]))
-        
+    def forward(self, x: Tensor) -> Tensor:                
         if self.aggr_type == 'MLP':
-            x = torch.cat(x1)
-            # print('MLP shape: {}'.format(x.shape))
-            x = self.aggregator(x)
+            # iterate on the frames
+            x1 = torch.Tensor()
+            for i in range(x.shape[1]):
+                pred = self.cnns[i](x[:, i, :, :, :])
+                x1 = torch.cat(pred)
+            # print('MLP shape: {}'.format(x1.shape))
+            x = self.aggregator(x1)
         elif self.aggr_type == 'LSTM':
-            hidden = torch.randn(x1[0])
-            for input in x1:
-                x, hidden = self.aggregator(input, hidden)
+            hidden = torch.randn(x[:, 0, :, :, :].size())
+            for i in range(x.shape[1]):
+                pred = self.cnns[i](x[:, i, :, :, :])
+                x1, hidden = self.aggregator(pred, hidden)
+            x = x1.clone()
         elif self.aggr_type == 'avg':
-            x = torch.stack(x1)
-            # print('AVG shape: {}'.format(x.shape))
-            # x = x.mean(dim=0, keepdim=True)
-            x = x.mean(dim=0)
+            # print('Input shape: {}'.format(x.shape))
+            x1 = torch.stack([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size()[1])])
+            # print('Stack shape: {}'.format(x1.shape))
+            x = x1.mean(dim=0)
             # print('AVG shape: {}'.format(x.shape))
         elif self.aggr_type == 'max':
-            x = torch.stack(x1)
-            x = x.max(dim=0)
+            x1 = torch.stack([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size()[1])])
+            x = x1.max(dim=0)
         else:
-            output = None
+            x = None
         # print('Output size: {}'.format(x.shape))
         return x
 

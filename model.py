@@ -237,14 +237,15 @@ def generate_model_2d(opt):
             
             if opt.aggr_type == 'MLP':
                 model.module.aggregator = nn.Sequential(
-                                nn.Dropout(0.9),
+                                # nn.Dropout(0.9),
+                                nn.ReLU(),
                                 nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes))
                 model.module.aggregator = model.module.aggregator.cuda()
             elif opt.aggr_type == 'LSTM':
                 self.aggregator = nn.Sequential(
                     nn.LSTM(self.num_classes, self.num_classes),
-                    nn.Dropout(0.9),
-                    nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes),
+                    # nn.Dropout(0.9),
+                    # nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes),
                 )
                 model.module.aggregator = model.module.aggregator.cuda()
             '''
@@ -267,14 +268,15 @@ def generate_model_2d(opt):
             
             if opt.aggr_type == 'MLP':
                 model.module.aggregator = nn.Sequential(
-                                nn.Dropout(0.9),
+                                # nn.Dropout(0.9),
+                                nn.ReLU(),
                                 nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes))
                 model.module.aggregator = model.module.aggregator.cuda()
             elif opt.aggr_type == 'LSTM':
                 self.aggregator = nn.Sequential(
                     nn.LSTM(self.num_classes, self.num_classes),
-                    nn.Dropout(0.9),
-                    nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes),
+                    # nn.Dropout(0.9),
+                    # nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes),
                 )
                 model.module.aggregator = model.module.aggregator.cuda()
             '''
