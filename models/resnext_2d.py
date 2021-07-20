@@ -400,7 +400,7 @@ class ResNeXt_2D(nn.Module):
         
         self.consensus_type = consensus_type
         self.aggregator = None
-        assert(self.consensus_type = ['MLP', 'LSTM', 'avg', 'max'])
+        assert(self.consensus_type in ['MLP', 'LSTM', 'avg', 'max'])
         if self.consensus_type == 'MLP':
             self.aggregator = nn.Sequential(
                 nn.Dropout(0.2),

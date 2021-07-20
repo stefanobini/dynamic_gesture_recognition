@@ -270,7 +270,7 @@ class MobileNetV2_2D(nn.Module):
         
         self.aggr_type = aggr_type
         self.aggregator = None
-        assert(self.aggr_type = ['MLP', 'LSTM', 'avg', 'max'])
+        assert(self.aggr_type in ['MLP', 'LSTM', 'avg', 'max'])
         if self.aggr_type == 'MLP':
             self.aggregator = nn.Sequential(
                 nn.Dropout(0.2),
