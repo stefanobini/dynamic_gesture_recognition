@@ -381,21 +381,18 @@ def wide_resnet101_2(pretrained: bool = False, progress: bool = True, **kwargs: 
 ################################                   
 ######## ADDING BY BEIS ########
 ################################
+'''
 class ResNeXt_2D(nn.Module):
     def __init__(self, arch=101, num_classes=249, sample_size=112, sample_duration=16, consensus_type='avg'):
         super(ResNeXt_2D, self).__init__()
         self.sample_duration = sample_duration
         self.num_classes = num_classes
-        '''
-        if arch = 101:
-            self.net = resnet101(pretrained = True, progress = False, num_classes = self.num_classes))
-        '''
         
         self.cnns = nn.ModuleList()
         for i in range(self.sample_duration):
             cnn = nn.Sequential(
                 # nn.AdaptiveAvgPool2d((32, 32)),
-                resnet101(pretrained = True, progress = False, num_classes = self.num_classes))
+                resnext101_32x8d(pretrained = True, progress = False, num_classes = self.num_classes))
             self.cnns.append(cnn)
         
         self.consensus_type = consensus_type
@@ -416,30 +413,31 @@ class ResNeXt_2D(nn.Module):
         
     
     def forward(self, x: Tensor) -> Tensor:
-        x1 = list()
-        # iterate on the frames
-        for i in range(x.shape[1]):
-            x1.append(self.cnns[i](x[:, i, :, :, :]))
-        
-        if self.consensus_type == 'MLP':
-            x = torch.cat(x1)
-            # print('MLP shape: {}'.format(x.shape))
-            x = self.aggregator(x)
-        elif self.consensus_type == 'LSTM':
-            hidden = torch.randn(x1[0])
-            for input in x1:
-                x, hidden = self.aggregator(input, hidden)
-        elif self.consensus_type == 'avg':
-            x = torch.stack(x1)
+        if self.aggr_type == 'MLP':
+            # iterate on the frames
+            x1 = torch.Tensor()
+            for i in range(x.shape[1]):
+                pred = self.cnns[i](x[:, i, :, :, :])
+                x1 = torch.cat(pred)
+            # print('MLP shape: {}'.format(x1.shape))
+            x = self.aggregator(x1)
+        elif self.aggr_type == 'LSTM':
+            hidden = torch.randn(x[:, 0, :, :, :].size())
+            for i in range(x.shape[1]):
+                pred = self.cnns[i](x[:, i, :, :, :])
+                x1, hidden = self.aggregator(pred, hidden)
+            x = x1.clone()
+        elif self.aggr_type == 'avg':
+            # print('Input shape: {}'.format(x.shape))
+            x1 = torch.stack([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size()[1])])
+            # print('Stack shape: {}'.format(x1.shape))
+            x = x1.mean(dim=0)
             # print('AVG shape: {}'.format(x.shape))
-            # x = x.mean(dim=0, keepdim=True)
-            x = x.mean(dim=0)
-            # print('AVG shape: {}'.format(x.shape))
-        elif self.consensus_type == 'max':
-            x = torch.stack(x1)
-            x = x.max(dim=0)
+        elif self.aggr_type == 'max':
+            x1 = torch.stack([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size()[1])])
+            x = x1.max(dim=0)
         else:
-            output = None
+            x = None
         # print('Output size: {}'.format(x.shape))
         return x
 
@@ -467,9 +465,6 @@ def get_fine_tuning_parameters(model, ft_portion):
 
 
 def get_model(**kwargs):
-    """
-    Returns the model.
-    """
     model = ResNeXt_2D(**kwargs)
     return model
 
@@ -494,3 +489,4 @@ if __name__ == "__main__":
     # input_var = Variable(torch.randn(8, 3, 16, 112, 112))
     output = model(input_tensor)
     print(output.shape)
+'''

@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from models import c3d, squeezenet, mobilenet, shufflenet, mobilenetv2, shufflenetv2, resnext, resnet, mobilenetv2_2d, resnext_2d
+from models import c3d, squeezenet, mobilenet, shufflenet, mobilenetv2, shufflenetv2, resnext, resnet, consensus_module
 
 
 def generate_model(opt):
@@ -197,8 +197,9 @@ def generate_model_2d(opt):
 
 
     if opt.model == 'mobilenetv2_2d':        
-        from models.mobilenetv2_2d import get_fine_tuning_parameters
-        model = mobilenetv2_2d.get_model(
+        from models.consensus_module import get_fine_tuning_parameters
+        model = consensus_module.get_model(
+            net=opt.model,
             num_classes=opt.n_classes,
             sample_size=opt.sample_size,
             width_mult=opt.width_mult,
@@ -206,9 +207,10 @@ def generate_model_2d(opt):
             aggr_type=opt.aggr_type)
     elif opt.model == 'resnext_2d':
         assert opt.model_depth in [101]
-        from models.resnext_2d import get_fine_tuning_parameters
+        from models.consensus_module import get_fine_tuning_parameters
         if opt.model_depth == 101:
-            model = resnext_2d.get_model(
+            model = consensus_module.get_model(
+                net=opt.model,
                 arch=opt.model_depth,
                 num_classes=opt.n_classes,
                 shortcut_type=opt.resnet_shortcut,

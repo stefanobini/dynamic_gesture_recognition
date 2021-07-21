@@ -204,7 +204,7 @@ class MobileNetV2(nn.Module):
         return self._forward_impl(x)
 
 
-def mobilenet_v2(pretrained: bool = False, progress: bool = True, num_classes:int = 249, **kwargs: Any) -> MobileNetV2:
+def mobilenetv2(pretrained: bool = False, progress: bool = True, num_classes:int = 249, **kwargs: Any) -> MobileNetV2:
     """
     Constructs a MobileNetV2 architecture from
     `"MobileNetV2: Inverted Residuals and Linear Bottlenecks" <https://arxiv.org/abs/1801.04381>`_.
@@ -224,37 +224,8 @@ def mobilenet_v2(pretrained: bool = False, progress: bool = True, num_classes:in
         )
     return model
     
-    
-class MLPmodule(torch.nn.Module):
-    """
-    This is the 1-layer MLP implementation used for linking spatio-temporal
-    features coming from different segments.
-    """
-    def __init__(self, num_frames, num_class):
-        super(MLPmodule, self).__init__()
-        self.num_frames = num_frames
-        self.num_class = num_class
-        self.classifier = nn.Sequential(
-                                        nn.ReLU(),
-                                        nn.Linear((self.num_class * self.num_frames), self.num_class)
-        )
-        '''
-        self.num_bottleneck = 512
-        self.classifier = nn.Sequential(
-                                       nn.ReLU(),
-                                       nn.Linear(self.num_frames * self.num_class, self.num_bottleneck))
-                                       # nn.Dropout(0.90), # Add an extra DO if necess.
-                                       nn.ReLU(),
-                                       nn.Linear(self.num_bottleneck, self.num_class),
-        )
-        '''
-        
-    def forward(self, input):
-        # input = torch.cat(input)
-        input = self.classifier(input)
-        return input
 
-
+'''
 class MobileNetV2_2D(nn.Module):
     def __init__(self, num_classes=249, sample_size=112, width_mult=1., sample_duration=16, aggr_type='avg'):
         super(MobileNetV2_2D, self).__init__()
@@ -265,7 +236,7 @@ class MobileNetV2_2D(nn.Module):
         for i in range(self.sample_duration):
             cnn = nn.Sequential(
                 # nn.AdaptiveAvgPool2d((32, 32)),
-                mobilenet_v2(pretrained = True, num_classes = num_classes))
+                mobilenetv2(pretrained = True, num_classes = num_classes))
             self.cnns.append(cnn)
         
         self.aggr_type = aggr_type
@@ -338,9 +309,6 @@ def get_fine_tuning_parameters(model, ft_portion):
 
 
 def get_model(**kwargs):
-    """
-    Returns the model.
-    """
     model = MobileNetV2_2D(**kwargs)
     return model
 
@@ -365,3 +333,4 @@ if __name__ == "__main__":
     # input_var = Variable(torch.randn(8, 3, 16, 112, 112))
     output = model(input_tensor)
     print(output.shape)
+'''

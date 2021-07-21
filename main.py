@@ -20,7 +20,8 @@ from utils import *
 from train import train_epoch
 from validation import val_epoch
 import test
-from torchsummary import summary
+from torchinfo import summary
+# from torchsummary import summary
 
 
 if __name__ == '__main__':
@@ -49,14 +50,14 @@ if __name__ == '__main__':
 
     torch.manual_seed(opt.manual_seed)
     
-    input_shape = (3, opt.sample_duration, opt.sample_size, opt.sample_size)
+    input_shape = (opt.batch_size, 3, opt.sample_duration, opt.sample_size, opt.sample_size)
     if opt.cnn_dim == 3:
         model, parameters = generate_model(opt)
     else:
         model, parameters = generate_model_2d(opt)
-        input_shape = (opt.sample_duration, 3, opt.sample_size, opt.sample_size)
+        input_shape = (opt.batch_size, opt.sample_duration, 3, opt.sample_size, opt.sample_size)
     # print('Input model shape: ', input_shape)
-    model_sum = summary(model.module, input_shape)
+    # model_sum = summary(model.module, input_shape)
 
     criterion = nn.CrossEntropyLoss()
     if not opt.no_cuda:

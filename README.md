@@ -217,7 +217,7 @@ python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/nvgesture
 
 ## Pre-train on 20BN-Jester
 ```bash
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/jester/RGB_frames --annotation_path annotation_Jester/jester.json --result_path results/jester --dataset jester --n_classes 27 --n_finetune_classes 27 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 60 --lr_steps 30 45 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modality RGB
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/jester/RGB_frames --annotation_path annotation_Jester/jester.json --result_path results/jester --dataset jester --n_classes 27 --n_finetune_classes 27 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 60 --lr_steps 30 45 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modality RGB --aggr_type avg
 ```
 
 ## Training
