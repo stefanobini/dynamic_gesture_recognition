@@ -32,39 +32,23 @@ class ConsensusModule(nn.Module):
                 nn.Linear(self.num_classes * self.sample_duration, self.num_classes)
             )
         elif self.aggr_type == 'LSTM':
-            self.aggregator = nn.LSTM(input_size=self.num_classes, hidden_size=self.num_classes, batch_first=False, bidirectional=False)
-            '''
-            self.aggregator = nn.Sequential(
-                nn.LSTM(input_size=self.num_classes, hidden_size=self.num_classes, batch_first=False, bidirectional=False),
-                # nn.Dropout(0.2),
-                # nn.Linear(self.num_classes * self.sample_duration, self.num_classes),
-            )
-            '''
+            self.aggregator = nn.LSTM(input_size=self.num_classes, hidden_size=self.num_classes, batch_first=False, bidirectional=True)
     
     def forward(self, x: Tensor) -> Tensor:                
         if self.aggr_type == 'MLP':
-            print('*** MLP input shape: ', x.size())
             # iterate on the frames
-            x1 = list()
-            for i in range(x.shape[1]):
-                pred = self.cnns[i](x[:, i, :, :, :])
-                # print('*** MLP pred shape: ', pred.size())
-                x1.append(pred)
-            print('*** MLP pred shape: ', x1[0].size())
-            x = torch.cat(x1).cuda()
-            print('*** MLP before aggregator shape: ', x.size())
+            x = torch.cat([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size()[1])], dim=1)
             x = self.aggregator(x)
-            print('*** MLP output shape: ', x.size())
         elif self.aggr_type == 'LSTM':
-            h_0 = torch.randn(1, x.size(0), self.num_classes).cuda()
-            c_0 = torch.randn(1, x.size(0), self.num_classes).cuda()
+            h_0 = torch.randn(2, x.size(0), self.num_classes).cuda()
+            c_0 = torch.randn(2, x.size(0), self.num_classes).cuda()
             for i in range(x.shape[1]):
                 pred = self.cnns[i](x[:, i, :, :, :])
                 x1, (h_0, c_0) = self.aggregator(pred.view(-1, x.size(0), self.num_classes), (h_0, c_0))
             x = x1[-1]
         elif self.aggr_type == 'avg':
-            x1 = torch.stack([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size()[1])])
-            x = x1.mean(dim=0)
+            x = torch.stack([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size()[1])])
+            x = x.mean(dim=0)
         else:
             x = None
         return x

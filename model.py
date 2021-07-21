@@ -275,11 +275,14 @@ def generate_model_2d(opt):
                                 nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes))
                 model.module.aggregator = model.module.aggregator.cuda()
             elif opt.aggr_type == 'LSTM':
+                self.aggregator = nn.LSTM(input_size=self.num_classes, hidden_size=self.num_classes, batch_first=False, bidirectional=True)
+                '''
                 self.aggregator = nn.Sequential(
                     nn.LSTM(self.num_classes, self.num_classes),
-                    # nn.Dropout(0.9),
-                    # nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes),
+                    nn.Dropout(0.9),
+                    nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes),
                 )
+                '''
                 model.module.aggregator = model.module.aggregator.cuda()
             '''
             else:
