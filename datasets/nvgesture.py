@@ -209,7 +209,8 @@ class NVGesture(data.Dataset):
                  temporal_transform=None,
                  target_transform=None,
                  sample_duration=16,
-                 get_loader=get_default_video_loader):
+                 get_loader=get_default_video_loader,
+                 cnn_dim=3):
         self.data, self.class_names = make_dataset(
             root_path, annotation_path, subset, n_samples_for_each_video,
             sample_duration)
@@ -219,6 +220,7 @@ class NVGesture(data.Dataset):
         self.target_transform = target_transform
         self.sample_duration = sample_duration
         self.loader = get_loader()
+        self.cnn_dim = cnn_dim
 
     def __getitem__(self, index):
         """
@@ -239,7 +241,11 @@ class NVGesture(data.Dataset):
             self.spatial_transform.randomize_parameters()
             clip = [self.spatial_transform(img) for img in clip]
         # im_dim = clip[0].size()[-2:]
-        clip = torch.stack(clip, 0).permute(1, 0, 2, 3)
+        if self.cnn_dim == 3:
+            clip = torch.stack(clip, 0).permute(1, 0, 2, 3)
+        else:
+            clip = torch.stack(clip, 0)
+        # print('clip shape: {}'.format(clip.shape))
 
         target = self.data[index]
         if self.target_transform is not None:

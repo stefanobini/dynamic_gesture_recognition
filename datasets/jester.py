@@ -197,7 +197,7 @@ class Jester(data.Dataset):
         if self.spatial_transform is not None:
             self.spatial_transform.randomize_parameters()
             clip = [self.spatial_transform(img) for img in clip]
-        im_dim = clip[0].size()[-2:]
+        # im_dim = clip[0].size()[-2:]
         if self.cnn_dim == 3:
             clip = torch.stack(clip, 0).permute(1, 0, 2, 3)
         else:
