@@ -25,6 +25,7 @@ from torchinfo import summary
 
 
 if __name__ == '__main__':
+    os.environ['CUDA_VISIBLE_DEVICES']='0'
     opt = parse_opts()
     if opt.root_path != '':
         opt.video_path = os.path.join(opt.root_path, opt.video_path)
@@ -141,7 +142,8 @@ if __name__ == '__main__':
             opt, spatial_transform, temporal_transform, target_transform)
         val_loader = torch.utils.data.DataLoader(
             validation_data,
-            batch_size=16,
+            # batch_size=16,
+            batch_size=opt.batch_size,
             shuffle=False,
             num_workers=opt.n_threads,
             pin_memory=True)
@@ -211,7 +213,8 @@ if __name__ == '__main__':
                                  target_transform)
         test_loader = torch.utils.data.DataLoader(
             test_data,
-            batch_size=16,
+            # batch_size=16,
+            batch_size=opt.batch_size,
             shuffle=False,
             num_workers=opt.n_threads,
             pin_memory=True)
