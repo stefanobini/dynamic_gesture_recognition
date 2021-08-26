@@ -11,10 +11,12 @@ from utils import AverageMeter
 
 
 def calculate_video_results(output_buffer, video_id, test_results, class_names, predictions_per_video, predictions):
+    print('Class name: {}\n'.format(class_names))
     video_outputs = torch.stack(output_buffer)
     average_scores = torch.mean(video_outputs, dim=0)
     sorted_scores, locs = torch.topk(average_scores, k=predictions_per_video)
-    # print('Shape: {}'.format(sorted_scores.shape))
+    print('LOCS: {}'.format(locs))
+    print('Shape: {}'.format(average_scores.size()))
 
     video_results = []
     for i in range(sorted_scores.size(0)):

@@ -10,10 +10,11 @@ from models.resnext_2d import resnext101_32x8d
 
 
 class ConsensusModule(nn.Module):
-    def __init__(self, num_classes=249, sample_size=112, width_mult=1., sample_duration=16, aggr_type='avg', net=mobilenetv2):
+    def __init__(self, num_classes=249, sample_size=112, width_mult=1., sample_duration=16, aggr_type='avg', net=mobilenetv2, n_finetune_classes=249):
         super(ConsensusModule, self).__init__()
         self.sample_duration = sample_duration
         self.num_classes = num_classes
+        self.n_finetune_classes = n_finetune_classes
         
         self.cnns = nn.ModuleList()
         for i in range(self.sample_duration):
@@ -34,18 +35,20 @@ class ConsensusModule(nn.Module):
         elif self.aggr_type == 'LSTM':
             self.aggregator = nn.LSTM(input_size=self.num_classes, hidden_size=self.num_classes, batch_first=False, bidirectional=True)
     
-    def forward(self, x: Tensor) -> Tensor:                
+    def forward(self, x: Tensor) -> Tensor:
         if self.aggr_type == 'MLP':
             # iterate on the frames
-            x = torch.cat([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size()[1])], dim=1)
+            x = torch.cat([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size(1))], dim=1)
             x = self.aggregator(x)
         elif self.aggr_type == 'LSTM':
-            h_0 = torch.randn(2, x.size(0), self.num_classes).cuda()
-            c_0 = torch.randn(2, x.size(0), self.num_classes).cuda()
-            for i in range(x.shape[1]):
+            h_0 = torch.randn(2, x.size(0), self.n_finetune_classes).cuda()
+            c_0 = torch.randn(2, x.size(0), self.n_finetune_classes).cuda()
+            for i in range(x.size(1)):
                 pred = self.cnns[i](x[:, i, :, :, :])
-                x1, (h_0, c_0) = self.aggregator(pred.view(-1, x.size(0), self.num_classes), (h_0, c_0))
+                x1, (h_0, c_0) = self.aggregator(pred.view(-1, x.size(0), self.n_finetune_classes), (h_0, c_0))
             x = x1[-1]
+            x = x.view(x.size(0), -1, x.size(1))      # stack output of bidirectional cells, because it is doubled
+            x = x.mean(dim=1)                                           # average the output of bidirectional cells
         elif self.aggr_type == 'avg':
             x = torch.stack([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size()[1])])
             x = x.mean(dim=0)

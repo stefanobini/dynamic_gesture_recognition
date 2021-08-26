@@ -27,7 +27,8 @@ def get_training_set(opt, spatial_transform, temporal_transform,
             spatial_transform=spatial_transform,
             temporal_transform=temporal_transform,
             target_transform=target_transform,
-            sample_duration=opt.sample_duration)
+            sample_duration=opt.sample_duration,
+            cnn_dim=opt.cnn_dim)
     elif opt.dataset == 'nvgesture':
         training_data = NVGesture(
             opt.video_path,
@@ -37,7 +38,8 @@ def get_training_set(opt, spatial_transform, temporal_transform,
             spatial_transform=spatial_transform,
             temporal_transform=temporal_transform,
             target_transform=target_transform,
-            sample_duration=opt.sample_duration)
+            sample_duration=opt.sample_duration,
+            cnn_dim=opt.cnn_dim)
     return training_data
 
 
@@ -66,7 +68,8 @@ def get_validation_set(opt, spatial_transform, temporal_transform,
             spatial_transform,
             temporal_transform,
             target_transform,
-            sample_duration=opt.sample_duration)
+            sample_duration=opt.sample_duration,
+            cnn_dim=opt.cnn_dim)
     elif opt.dataset == 'nvgesture':
         validation_data = NVGesture(
             opt.video_path,
@@ -77,7 +80,8 @@ def get_validation_set(opt, spatial_transform, temporal_transform,
             spatial_transform,
             temporal_transform,
             target_transform,
-            sample_duration=opt.sample_duration)
+            sample_duration=opt.sample_duration,
+            cnn_dim=opt.cnn_dim)
     return validation_data
 
 
@@ -110,7 +114,8 @@ def get_test_set(opt, spatial_transform, temporal_transform, target_transform):
             spatial_transform,
             temporal_transform,
             target_transform,
-            sample_duration=opt.sample_duration)
+            sample_duration=opt.sample_duration,
+            cnn_dim=opt.cnn_dim)
     elif opt.dataset == 'nvgesture':
         test_data = NVGesture(
             opt.video_path,
@@ -121,5 +126,6 @@ def get_test_set(opt, spatial_transform, temporal_transform, target_transform):
             spatial_transform,
             temporal_transform,
             target_transform,
-            sample_duration=opt.sample_duration)
+            sample_duration=opt.sample_duration,
+            cnn_dim=opt.cnn_dim)
     return test_data
