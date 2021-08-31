@@ -10,7 +10,7 @@ from models.resnext_2d import resnext101_32x8d
 
 
 class ConsensusModule(nn.Module):
-    def __init__(self, num_classes=249, sample_size=112, width_mult=1., sample_duration=16, aggr_type='avg', net=mobilenetv2, n_finetune_classes=249):
+    def __init__(self, num_classes=249, n_finetune_classes=249, sample_size=112, width_mult=1., sample_duration=16, aggr_type='avg', net=mobilenetv2):
         super(ConsensusModule, self).__init__()
         self.sample_duration = sample_duration
         self.num_classes = num_classes
@@ -60,23 +60,52 @@ class ConsensusModule(nn.Module):
 def get_fine_tuning_parameters(model, ft_portion):
     if ft_portion == "complete":
         return model.parameters()
-
+    
     elif ft_portion == "last_layer":
-        ft_module_names = []
-        ft_module_names.append('aggregator')
-
-        parameters = []
-        for k, v in model.named_parameters():
-            for ft_module in ft_module_names:
-                if ft_module in k:
-                    parameters.append({'params': v})
-                    break
-            else:
-                parameters.append({'params': v, 'lr': 0.0})
-        return parameters
-
+        for param in model.module.parameters():
+            param.requires_grad = False
+        for net in model.module.cnns:
+            for param in net[0].classifier.parameters():
+                param.requires_grad = True
+        if model.module.aggregator is not None:
+            for param in model.module.aggregator.parameters():
+                param.requires_grad = True
+        
+        return model.parameters()
+    
     else:
         raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
+    '''
+    elif ft_portion == "last_layer":
+        ft_module_names = []
+        ft_module_names.append('classifier')
+        ft_module_names.append('aggregator')
+        
+        count_1 = 0
+        count_2 = 0
+        parameters = []
+        for k, v in model.named_parameters():
+            # count_1 += 1
+            for ft_module in ft_module_names:
+                if ft_module in k:
+                    count_1 += 1
+                    # print('######### BEFORE BREAK! #########')
+                    # parameters.append({'params': v})
+                    parameters.append({'params': v, 'requires_grad': True})
+                    # print('* Learning rate: {} *'.format(parameters[-1].keys()))
+                    break
+            else:
+                count_2 += 1
+                # print('######### IN ELSE! #########')
+                # parameters.append({'params': v, 'lr': 0.0})
+                parameters.append({'params': v, 'requires_grad': False})
+                # print('* Learning rate: {} *'.format(parameters[-1].keys()))
+        print('*****\nCount_1: {}\nCount_2 : {}\n*****'.format(count_1, count_2))
+        return parameters
+        
+    else:
+        raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
+    '''
 
 
 def get_model(net='mobilenetv2_2d', **kwargs):

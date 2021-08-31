@@ -57,6 +57,17 @@ if __name__ == '__main__':
     else:
         model, parameters = generate_model_2d(opt)
         input_shape = (opt.batch_size, opt.sample_duration, 3, opt.sample_size, opt.sample_size)
+    '''
+    print('######### Parameters: #########')
+    pytorch_total_params = sum(p.numel() for p in model.parameters() if
+                               p.requires_grad)
+    no_train_params = sum(p.numel() for p in model.parameters() if not
+                               p.requires_grad)
+    print("Total number of trainable parameters: ", pytorch_total_params)
+    print("Total number of non-trainable parameters: ", no_train_params)
+    
+    print('###############################')
+    '''
     # print('Input model shape: ', input_shape)
     # model_sum = summary(model.module, input_shape)
 

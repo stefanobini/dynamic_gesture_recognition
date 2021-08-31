@@ -261,7 +261,9 @@ def generate_model_2d(opt):
                     nn.Dropout(0.2),
                     nn.Linear(model.module.cnns[i][0].classifier[1].in_features, opt.n_finetune_classes),
                 )
+                # print('########## {}° network ##########\n{}################################'.format(i, model.module.cnns[i][0].classifier))
                 model.module.cnns[i][0].classifier.cuda()
+            # print('########## CNNs ##########\n{}################################'.format(model.module.cnns))
             '''
             else:
                 model.module.aggregator = nn.Linear(model.module.aggregator.in_features, opt.n_finetune_classes)

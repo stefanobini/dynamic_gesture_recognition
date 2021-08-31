@@ -1,16 +1,5 @@
 ''' Bash command
-python3 test_input.py --root_path ./ --result_path results/test_something --train_crop random --sample_size 112 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 1 --dataset isogd --video_path ../datasets/chalearn_isogd/IsoGD_RGB-D_frames --annotation_path annotation_ChaLearn_IsoGD/test_dataloader.json --n_val_samples 0 --modality RGB --no_mean_norm
-python3 test_input.py --root_path ./ --result_path results/test_something --train_crop random --sample_size 112 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 1 --dataset isogd --video_path ../datasets/chalearn_isogd/IsoGD_OF_frames --annotation_path annotation_ChaLearn_IsoGD/test_dataloader.json --n_val_samples 0 --modality OF --no_mean_norm
-python3 test_input.py --root_path ./ --result_path results/test_something --train_crop none --sample_size 112 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 1 --dataset isogd --video_path ../datasets/chalearn_isogd/IsoGD_MHI_frames --annotation_path annotation_ChaLearn_IsoGD/test_dataloader.json --n_val_samples 0 --modality MHI --no_mean_norm
-
-python3 test_input.py --root_path ./ --result_path results/test_something --train_crop random --sample_size 112 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 1 --dataset nvgesture --video_path ../datasets/nvgesture/RGB-D_frames --annotation_path annotation_NVGesture/test_dataloader.json --n_val_samples 0 --modality RGB --no_mean_norm
-
-python3 test_input.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/nvgesture/RGB-D_frames --annotation_path annotation_NVGesture/test_dataloader.json --result_path results/test_something --pretrain_path pretrained_models/jester_resnext_101_RGB_16_best.pth --dataset nvgesture --n_classes 27 --n_finetune_classes 25 --ft_portion complete --model resnext --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 30 --lr_patience 3 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 32 --checkpoint 1 --n_val_samples 1 --no_hflip --modality RGB
-python3 test_input.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/nvgesture/RGB-D_frames --annotation_path annotation_NVGesture/test_dataloader.json --result_path results/test_something --pretrain_path results/nvgesture/nvgesture_resnext_1.0x_RGB_16_best.pth --dataset nvgesture --n_classes 25 --n_finetune_classes 25 --model resnext --groups 3 --sample_duration 16 --downsample 2 --batch_size 16 --n_threads 32 --model_depth 101 --no_train --no_val --test --test_subset test --modality RGB --preds_per_video 25
-python3 test_input.py --root_path ./ --video_path ../datasets/nvgesture/RGB-D_frames --annotation_path annotation_NVGesture/test_dataloader.json --result_path results/test_something --pretrain_path results/nvgesture/nvgesture_resnext_1.0x_RGB_16_best.pth --dataset nvgesture --n_classes 25 --n_finetune_classes 25 --model resnext --groups 3 --sample_duration 16 --downsample 2 --batch_size 16 --n_threads 32 --model_depth 101 --n_val_samples 1 --no_train --no_val --test --test_subset test --modality D --preds_per_video 25
-python3 test_input.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/nvgesture/RGB-D_frames_aug --annotation_path annotation_NVGesture/test_dataloader.json --result_path results/test_something --pretrain_path results/nvgesture/nvgesture_resnext_1.0x_RGB_16_best.pth --dataset nvgesture --n_classes 25 --n_finetune_classes 25 --model resnext --groups 3 --sample_duration 16 --downsample 2 --batch_size 16 --n_threads 32 --model_depth 101 --n_val_samples 1 --no_train --no_val --test --test_subset test --modality D --preds_per_video 25
-
-python3 test_input.py --root_path ./ --video_path ../datasets/jester/RGB_frames --annotation_path annotation_Jester/test_dataloader.json --result_path results/test_something --pretrain_path pretrained_models/jester_resnext_101_RGB_16_best.pth --dataset jester --n_classes 27 --n_finetune_classes 27 --ft_portion complete --model mobilenetv2 --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 30 --lr_patience 3 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 32 --checkpoint 1 --n_val_samples 1 --no_hflip --modality RGB
+python3 test_input.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd/RGB-D_frames --annotation_path annotation_ChaLearn_IsoGD/test_dataloader.json --result_path results/chalearn_isogd --dataset isogd --n_classes 249 --n_finetune_classes 249 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 60 --lr_steps 30 45 --learning_rate 0.01 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modality RGB --aggr_type avg
 
 '''
 import numpy as np
@@ -108,13 +97,14 @@ if not opt.no_train:
         # inputs = Variable(inputs)
         # targets = Variable(targets)
         # print('*********** Inputs ***********\n{}\n*****************************'. format(inputs.shape))
-        for frame in range(inputs.shape[2]):
-            image = inputs[:, :, frame, :, :]
+        n_frames = inputs.shape[1] if opt.cnn_dim == 2 else inputs.shape[2]
+        for frame in range(n_frames):
+            image = inputs[:, frame, :, :, :] if opt.cnn_dim == 2 else inputs[:, :, frame, :, :]
             image = image.mul(opt.norm_value)
             image = image.div(255)
-            # print('*********** Image ***********\n{}\n*****************************'. format(image))
+            # print('*********** Image ***********\n{}\n*****************************'. format(image.size()))
             path = '{}/image{:05d}_{}.jpg'.format(opt.result_path, frame, subset)
-            print('Path: ' + path )
+            # print('Path: ' + path )
             save_image(image, path)
 if not opt.no_val:
     subset = 'validation'
