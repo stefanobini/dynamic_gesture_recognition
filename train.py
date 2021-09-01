@@ -27,6 +27,7 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
 
         if not opt.no_cuda:
             targets = targets.cuda()
+        # print('########### Input ###########\nType: {}\nTensor size: {}\n\n#############################'.format(type(inputs), inputs.size()))
         inputs = Variable(inputs)
         targets = Variable(targets)
         outputs = model(inputs)

@@ -1,7 +1,8 @@
 import torch
 from torch import nn
 
-from models import c3d, squeezenet, mobilenet, shufflenet, mobilenetv2, shufflenetv2, resnext, resnet, consensus_module
+from models import c3d, squeezenet, mobilenet, shufflenet, mobilenetv2, shufflenetv2, resnext, resnet, consensus_module_2dcnn
+from models import mobilenetv2, resnext, consensus_module_2dcnn, consensus_module_3dcnn
 
 
 def generate_model(opt):
@@ -150,13 +151,13 @@ def generate_model(opt):
                 model.module.classifier = model.module.classifier.cuda()
             else:
                 '''
-                model.module.fc = nn.Sequential(
+                model.module.classifier = nn.Sequential(
                                 nn.Dropout(p=0.5), 
-                                nn.Linear(model.module.fc.in_features, opt.n_finetune_classes))
+                                nn.Linear(model.module.classifier.in_features, opt.n_finetune_classes))
                 '''
-                model.module.fc = nn.Linear(model.module.fc.in_features, opt.n_finetune_classes)
+                model.module.classifier = nn.Linear(model.module.classifier.in_features, opt.n_finetune_classes)
                 #'''
-                model.module.fc = model.module.fc.cuda()
+                model.module.classifier = model.module.classifier.cuda()
 
             parameters = get_fine_tuning_parameters(model, opt.ft_portion)
             return model, parameters
@@ -180,11 +181,11 @@ def generate_model(opt):
                                 nn.AvgPool3d((1,4,4), stride=1))
             else:
                 '''
-                model.module.fc = nn.Sequential(
+                model.module.classifier = nn.Sequential(
                                 nn.Dropout(p=0.8), 
-                                nn.Linear(model.module.fc.in_features, opt.n_finetune_classes))
+                                nn.Linear(model.module.classifier.in_features, opt.n_finetune_classes))
                 '''
-                model.module.fc = nn.Linear(model.module.fc.in_features, opt.n_finetune_classes)
+                model.module.classifier = nn.Linear(model.module.classifier.in_features, opt.n_finetune_classes)
                 #'''
 
             parameters = get_fine_tuning_parameters(model, opt.ft_begin_index)
@@ -192,25 +193,128 @@ def generate_model(opt):
 
     return model, model.parameters()
 
+
+def generate_model_3d(opt):
+    assert opt.model in ['resnext', 'mobilenetv2']
+                         
+    if opt.model == 'mobilenetv2':
+        from models.consensus_module_3dcnn import get_fine_tuning_parameters
+        model = consensus_module_3dcnn.get_model(
+            num_classes=opt.n_classes,
+            n_finetune_classes=opt.n_finetune_classes,
+            sample_size=opt.sample_size,
+            width_mult=opt.width_mult,
+            net=opt.model,
+            modalities=opt.modalities,
+            aggr_type=opt.aggr_type)
+    elif opt.model == 'resnext':
+        from models.consensus_module_3dcnn import get_fine_tuning_parameters
+        model = consensus_module_3dcnn.get_model(
+            num_classes=opt.n_classes,
+            n_finetune_classes=opt.n_finetune_classes,
+            shortcut_type=opt.resnet_shortcut,
+            cardinality=opt.resnext_cardinality,
+            sample_size=opt.sample_size,
+            sample_duration=opt.sample_duration,
+            net=opt.model,
+            modalities=opt.modalities,
+            aggr_type=opt.aggr_type,
+            feat_fusion=opt.feat_fusion)
+
+    if not opt.no_cuda:
+        model = model.cuda()
+        model = nn.DataParallel(model, device_ids=None)
+        '''
+        pytorch_total_params = sum(p.numel() for p in model.parameters() if
+                               p.requires_grad)
+        print("Total number of trainable parameters: ", pytorch_total_params)
+        '''
+
+        if opt.pretrain_path:
+            print('loading pretrained model {}'.format(opt.pretrain_path))
+            pretrain = torch.load(opt.pretrain_path, map_location=torch.device('cpu'))
+            assert opt.arch == pretrain['arch']
+            model.load_state_dict(pretrain['state_dict'])
+            
+            if opt.test or opt.ft_portion == 'none':
+                return model, model.parameters()
+            
+            if opt.model in  ['mobilenet', 'mobilenetv2', 'shufflenet', 'shufflenetv2']:
+                model.module.classifier = nn.Sequential(
+                                nn.Dropout(0.9),
+                                nn.Linear(model.module.classifier[1].in_features, opt.n_finetune_classes))
+                model.module.classifier = model.module.classifier.cuda()
+            elif opt.model == 'squeezenet':
+                model.module.classifier = nn.Sequential(
+                                nn.Dropout(p=0.5),
+                                nn.Conv3d(model.module.classifier[1].in_channels, opt.n_finetune_classes, kernel_size=1),
+                                nn.ReLU(inplace=True),
+                                nn.AvgPool3d((1,4,4), stride=1))
+                model.module.classifier = model.module.classifier.cuda()
+            else:
+                '''
+                model.module.classifier = nn.Sequential(
+                                nn.Dropout(p=0.5), 
+                                nn.Linear(model.module.classifier.in_features, opt.n_finetune_classes))
+                '''
+                model.module.classifier = nn.Linear(model.module.classifier.in_features, opt.n_finetune_classes)
+                #'''
+                model.module.classifier = model.module.classifier.cuda()
+
+            parameters = get_fine_tuning_parameters(model, opt.ft_portion)
+            return model, parameters
+    else:
+        if opt.pretrain_path:
+            print('loading pretrained model {}'.format(opt.pretrain_path))
+            pretrain = torch.load(opt.pretrain_path)
+            assert opt.arch == pretrain['arch']
+            model.load_state_dict(pretrain['state_dict'])
+
+            if opt.model in  ['mobilenet', 'mobilenetv2', 'shufflenet', 'shufflenetv2']:
+                model.module.classifier = nn.Sequential(
+                                nn.Dropout(0.9),
+                                nn.Linear(model.module.classifier[1].in_features, opt.n_finetune_classes)
+                                )
+            elif opt.model == 'squeezenet':
+                model.module.classifier = nn.Sequential(
+                                nn.Dropout(p=0.5),
+                                nn.Conv3d(model.module.classifier[1].in_channels, opt.n_finetune_classes, kernel_size=1),
+                                nn.ReLU(inplace=True),
+                                nn.AvgPool3d((1,4,4), stride=1))
+            else:
+                '''
+                model.module.classifier = nn.Sequential(
+                                nn.Dropout(p=0.8), 
+                                nn.Linear(model.module.classifier.in_features, opt.n_finetune_classes))
+                '''
+                model.module.classifier = nn.Linear(model.module.classifier.in_features, opt.n_finetune_classes)
+                #'''
+
+            parameters = get_fine_tuning_parameters(model, opt.ft_begin_index)
+            return model, parameters
+
+    return model, model.parameters()
+
+
 def generate_model_2d(opt):
     assert opt.model in ['mobilenetv2_2d', 'resnext_2d']
 
 
     if opt.model == 'mobilenetv2_2d':        
-        from models.consensus_module import get_fine_tuning_parameters
-        model = consensus_module.get_model(
+        from models.consensus_module_2dcnn import get_fine_tuning_parameters
+        model = consensus_module_2dcnn.get_model(
             net=opt.model,
             num_classes=opt.n_classes,
-                n_finetune_classes=opt.n_finetune_classes,
+            n_finetune_classes=opt.n_finetune_classes,
             sample_size=opt.sample_size,
             width_mult=opt.width_mult,
             sample_duration=opt.sample_duration,
             aggr_type=opt.aggr_type)
     elif opt.model == 'resnext_2d':
         assert opt.model_depth in [101]
-        from models.consensus_module import get_fine_tuning_parameters
+        from models.consensus_module_2dcnn import get_fine_tuning_parameters
         if opt.model_depth == 101:
-            model = consensus_module.get_model(
+            model = consensus_module_2dcnn.get_model(
                 net=opt.model,
                 arch=opt.model_depth,
                 num_classes=opt.n_classes,

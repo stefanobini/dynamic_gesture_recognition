@@ -9,9 +9,9 @@ from models.mobilenetv2_2d import mobilenetv2
 from models.resnext_2d import resnext101_32x8d
 
 
-class ConsensusModule(nn.Module):
+class ConsensusModule2DCNN(nn.Module):
     def __init__(self, num_classes=249, n_finetune_classes=249, sample_size=112, width_mult=1., sample_duration=16, aggr_type='avg', net=mobilenetv2):
-        super(ConsensusModule, self).__init__()
+        super(ConsensusModule2DCNN, self).__init__()
         self.sample_duration = sample_duration
         self.num_classes = num_classes
         self.n_finetune_classes = n_finetune_classes
@@ -110,9 +110,9 @@ def get_fine_tuning_parameters(model, ft_portion):
 
 def get_model(net='mobilenetv2_2d', **kwargs):
     if net == 'mobilenetv2_2d': 
-        model = ConsensusModule(net=mobilenetv2, **kwargs)
+        model = ConsensusModule2DCNN(net=mobilenetv2, **kwargs)
     elif net == 'resnext_2d':
-        model = ConsensusModule(net=resnext101_32x8d, **kwargs)
+        model = ConsensusModule2DCNN(net=resnext101_32x8d, **kwargs)
     return model
 
     

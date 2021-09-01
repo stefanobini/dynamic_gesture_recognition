@@ -9,7 +9,7 @@ from torch.optim import lr_scheduler
 from pytorch_model_summary import summary
 
 from opts import parse_opts
-from model import generate_model, generate_model_2d
+from model import generate_model, generate_model_2d, generate_model_3d
 from mean import get_mean, get_std
 from spatial_transforms import *
 from temporal_transforms import *
@@ -25,7 +25,7 @@ from torchinfo import summary
 
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES']='0'
+    os.environ['CUDA_VISIBLE_DEVICES']='2'
     opt = parse_opts()
     if opt.root_path != '':
         opt.video_path = os.path.join(opt.root_path, opt.video_path)
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     opt.mean = get_mean(opt.norm_value, dataset=opt.mean_dataset)
     opt.std = get_std(opt.norm_value)
     opt.store_name = '_'.join([opt.dataset, opt.model, str(opt.width_mult) + 'x',
-                               opt.modality, str(opt.sample_duration)])
+                               ''.join(['_'+modality for modality in opt.modalities]), str(opt.sample_duration)])
     print(opt)
     with open(os.path.join(opt.result_path, 'opts.json'), 'w') as opt_file:
         json.dump(vars(opt), opt_file)
@@ -53,7 +53,8 @@ if __name__ == '__main__':
     
     input_shape = (opt.batch_size, 3, opt.sample_duration, opt.sample_size, opt.sample_size)
     if opt.cnn_dim == 3:
-        model, parameters = generate_model(opt)
+        # model, parameters = generate_model(opt)
+        model, parameters = generate_model_3d(opt)
     else:
         model, parameters = generate_model_2d(opt)
         input_shape = (opt.batch_size, opt.sample_duration, 3, opt.sample_size, opt.sample_size)
@@ -75,7 +76,8 @@ if __name__ == '__main__':
     if not opt.no_cuda:
         criterion = criterion.cuda()
 
-    if opt.no_mean_norm and not opt.std_norm or opt.modality != 'RGB':
+    # if opt.no_mean_norm and not opt.std_norm or opt.modality != 'RGB':
+    if opt.no_mean_norm and not opt.std_norm:
         norm_method = Normalize([0, 0, 0], [1, 1, 1])
     elif not opt.std_norm:
         norm_method = Normalize(opt.mean, [1, 1, 1])
@@ -117,10 +119,10 @@ if __name__ == '__main__':
             num_workers=opt.n_threads,
             pin_memory=True)
         train_logger = Logger(
-            os.path.join(opt.result_path, 'train_{}.log'.format(opt.modality)),
+            os.path.join(opt.result_path, 'train{}.log'.format(''.join(['_'+modality for modality in opt.modalities]))),
             ['epoch', 'loss', 'prec1', 'prec5', 'lr'])
         train_batch_logger = Logger(
-            os.path.join(opt.result_path, 'train_batch_{}.log'.format(opt.modality)),
+            os.path.join(opt.result_path, 'train_batch{}.log'.format(''.join(['_'+modality for modality in opt.modalities]))),
             ['epoch', 'batch', 'iter', 'loss', 'prec1', 'prec5', 'lr'])
 
         if opt.nesterov:
@@ -159,7 +161,7 @@ if __name__ == '__main__':
             num_workers=opt.n_threads,
             pin_memory=True)
         val_logger = Logger(
-            os.path.join(opt.result_path, 'val_{}.log'.format(opt.modality)), ['epoch', 'loss', 'prec1', 'prec5'])
+            os.path.join(opt.result_path, 'val{}.log'.format(''.join(['_'+modality for modality in opt.modalities]))), ['epoch', 'loss', 'prec1', 'prec5'])
 
     best_prec1 = 0
     if opt.resume_path:
