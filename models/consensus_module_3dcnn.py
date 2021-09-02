@@ -24,16 +24,16 @@ class ConsensusModule3DCNN(nn.Module):
         
         self.aggr_type = aggr_type
         self.aggregator = None
-        assert(self.aggr_type in ['MLP', 'avg', 'max'])
+        assert(self.aggr_type in ['MLP', 'avg', 'max', 'none'])
         
         ########## Level in which fuse modalities ##########
-        feature_dim = self.cnns[0].classifier.in_features  if feat_fusion else self.num_classes
+        self.feat_dim = self.cnns[0].classifier.in_features  if feat_fusion else self.num_classes
         
         if self.aggr_type == 'MLP':
             self.aggregator = nn.Sequential(
                 # nn.Dropout(0.2),
                 nn.ReLU(),
-                nn.Linear(feature_dim * len(self.modalities), self.num_classes)
+                nn.Linear(self.feat_dim * len(self.modalities), self.num_classes)
             )
     
     def forward(self, x: Tensor) -> Tensor:
@@ -47,6 +47,8 @@ class ConsensusModule3DCNN(nn.Module):
         elif self.aggr_type == 'max':
             x = torch.stack([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size()[1])])
             x = x.max(dim=0)
+        elif self.aggr_type == 'none':  # the case in which use a single modality
+            x = self.cnns[0](x[:, 0, :, :, :])
         else:
             x = None
         return x
@@ -60,14 +62,21 @@ def get_fine_tuning_parameters(model, ft_portion):
         for param in model.module.parameters():
             param.requires_grad = False
         for net in model.module.cnns:
-            for param in net[0].classifier.parameters():
+            for param in net.classifier.parameters():
                 param.requires_grad = True
         if model.module.aggregator is not None:
             for param in model.module.aggregator.parameters():
                 param.requires_grad = True
-        
         return model.parameters()
-    
+        
+    elif ft_portion == "aggregator":
+        for param in model.module.parameters():
+            param.requires_grad = False
+        if model.module.aggregator is not None:
+            for param in model.module.aggregator.parameters():
+                param.requires_grad = True
+        return model.parameters()
+        
     else:
         raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
     '''

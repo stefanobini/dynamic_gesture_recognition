@@ -1,3 +1,4 @@
+import os
 import torch
 from torch import nn
 
@@ -229,38 +230,48 @@ def generate_model_3d(opt):
                                p.requires_grad)
         print("Total number of trainable parameters: ", pytorch_total_params)
         '''
-
-        if opt.pretrain_path:
-            print('loading pretrained model {}'.format(opt.pretrain_path))
-            pretrain = torch.load(opt.pretrain_path, map_location=torch.device('cpu'))
-            assert opt.arch == pretrain['arch']
-            model.load_state_dict(pretrain['state_dict'])
+        
+        if opt.pretrain_path:   
+            if '.pth' in opt.pretrain_path:
+                print('loading pretrained model {}'.format(opt.pretrain_path))
+                pretrain = torch.load(opt.pretrain_path, map_location=torch.device('cpu'))
+                assert opt.arch == pretrain['arch']
+                model.load_state_dict(pretrain['state_dict'])
+            elif opt.pretrain_path:
+                for i in range(len(opt.modalities)):
+                    pretrain_path = '_'.join([opt.dataset, opt.model, opt.modalities[i], 'none', 'best.pth'])
+                    pretrain_path = os.path.join(opt.pretrain_path, pretrain_path)
+                    print('loading pretrained model {}'.format(pretrain_path))
+                    pretrain = torch.load(pretrain_path, map_location=torch.device('cpu'))
+                    feature_state_dict = {key.replace('module.cnns.0.0.', ''): value for key, value in pretrain['state_dict'].items()}
+                    assert opt.arch == pretrain['arch']
+                    model.module.cnns[i].load_state_dict(feature_state_dict)
             
             if opt.test or opt.ft_portion == 'none':
                 return model, model.parameters()
             
-            if opt.model in  ['mobilenet', 'mobilenetv2', 'shufflenet', 'shufflenetv2']:
-                model.module.classifier = nn.Sequential(
-                                nn.Dropout(0.9),
-                                nn.Linear(model.module.classifier[1].in_features, opt.n_finetune_classes))
-                model.module.classifier = model.module.classifier.cuda()
-            elif opt.model == 'squeezenet':
-                model.module.classifier = nn.Sequential(
-                                nn.Dropout(p=0.5),
-                                nn.Conv3d(model.module.classifier[1].in_channels, opt.n_finetune_classes, kernel_size=1),
-                                nn.ReLU(inplace=True),
-                                nn.AvgPool3d((1,4,4), stride=1))
-                model.module.classifier = model.module.classifier.cuda()
-            else:
-                '''
-                model.module.classifier = nn.Sequential(
-                                nn.Dropout(p=0.5), 
-                                nn.Linear(model.module.classifier.in_features, opt.n_finetune_classes))
-                '''
-                model.module.classifier = nn.Linear(model.module.classifier.in_features, opt.n_finetune_classes)
-                #'''
-                model.module.classifier = model.module.classifier.cuda()
-
+            if opt.n_classes != opt.n_finetune_classes:
+                # change the output of the final output
+                if opt.aggr_type == 'MLP':
+                    model.module.aggregator = nn.Sequential(
+                                    # nn.Dropout(0.9),
+                                    nn.ReLU(),
+                                    nn.Linear(model.module.feat_dim, opt.n_finetune_classes))
+                    model.module.aggregator = model.module.aggregator.cuda()
+                
+                # change the output size of single cnn
+                for i in range(len(opt.modalities)):
+                    if opt.model == 'mobilenetv2':
+                        model.module.cnns[i].classifier = nn.Sequential(
+                            nn.Dropout(0.2),
+                            nn.Linear(model.module.cnns[i].classifier[1].in_features, opt.n_finetune_classes),
+                        )
+                        # print('########## {}° network ##########\n{}################################'.format(i, model.module.cnns[i][0].classifier))
+                    elif  opt.model == 'resnext':
+                        model.module.cnns[i].classifier = nn.Linear(model.module.cnns[i].classifier[1].in_features, opt.n_finetune_classes)
+                    model.module.cnns[i].classifier.cuda()
+                # print('########## CNNs ##########\n{}################################'.format(model.module.cnns))
+            
             parameters = get_fine_tuning_parameters(model, opt.ft_portion)
             return model, parameters
     else:
@@ -270,18 +281,12 @@ def generate_model_3d(opt):
             assert opt.arch == pretrain['arch']
             model.load_state_dict(pretrain['state_dict'])
 
-            if opt.model in  ['mobilenet', 'mobilenetv2', 'shufflenet', 'shufflenetv2']:
+            if opt.model in  ['mobilenetv2']:
                 model.module.classifier = nn.Sequential(
                                 nn.Dropout(0.9),
                                 nn.Linear(model.module.classifier[1].in_features, opt.n_finetune_classes)
                                 )
-            elif opt.model == 'squeezenet':
-                model.module.classifier = nn.Sequential(
-                                nn.Dropout(p=0.5),
-                                nn.Conv3d(model.module.classifier[1].in_channels, opt.n_finetune_classes, kernel_size=1),
-                                nn.ReLU(inplace=True),
-                                nn.AvgPool3d((1,4,4), stride=1))
-            else:
+            elif opt.model in  ['resnext']:
                 '''
                 model.module.classifier = nn.Sequential(
                                 nn.Dropout(p=0.8), 

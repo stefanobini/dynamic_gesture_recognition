@@ -25,7 +25,7 @@ from torchinfo import summary
 
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES']='2'
+    os.environ['CUDA_VISIBLE_DEVICES']='3'
     opt = parse_opts()
     if opt.root_path != '':
         opt.video_path = os.path.join(opt.root_path, opt.video_path)
@@ -43,8 +43,7 @@ if __name__ == '__main__':
     opt.arch = '{}'.format(opt.model)
     opt.mean = get_mean(opt.norm_value, dataset=opt.mean_dataset)
     opt.std = get_std(opt.norm_value)
-    opt.store_name = '_'.join([opt.dataset, opt.model, str(opt.width_mult) + 'x',
-                               ''.join(['_'+modality for modality in opt.modalities]), str(opt.sample_duration)])
+    opt.store_name = '_'.join([opt.dataset, opt.model, '_'.join([modality for modality in opt.modalities]), opt.aggr_type])
     print(opt)
     with open(os.path.join(opt.result_path, 'opts.json'), 'w') as opt_file:
         json.dump(vars(opt), opt_file)
@@ -58,7 +57,7 @@ if __name__ == '__main__':
     else:
         model, parameters = generate_model_2d(opt)
         input_shape = (opt.batch_size, opt.sample_duration, 3, opt.sample_size, opt.sample_size)
-    '''
+    #'''
     print('######### Parameters: #########')
     pytorch_total_params = sum(p.numel() for p in model.parameters() if
                                p.requires_grad)
@@ -68,7 +67,7 @@ if __name__ == '__main__':
     print("Total number of non-trainable parameters: ", no_train_params)
     
     print('###############################')
-    '''
+    #'''
     # print('Input model shape: ', input_shape)
     # model_sum = summary(model.module, input_shape)
 

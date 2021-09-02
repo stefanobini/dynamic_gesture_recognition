@@ -61,7 +61,7 @@ def parse_opts():
     parser.add_argument('--norm_value', default=1, type=int, help='If 1, range of inputs is [0-255]. If 255, range of inputs is [0-1].')
     parser.add_argument('--cnn_dim', default=3, type=int, help='Dimension of convolutional kernel (2 | 3')
     parser.add_argument('--model', default='resnet', type=str, help='(resnet | preresnet | wideresnet | resnext | densenet | ')
-    parser.add_argument('--aggr_type', default='avg', type=str, help='(MLP | LSTM | avg')
+    parser.add_argument('--aggr_type', default='none', type=str, help='(MLP | LSTM | avg | none')
     parser.add_argument('--feat_fusion', action='store_true', help='If true, modalities fusion is applied to feature level')
     parser.set_defaults(feat_fusion=False)
     parser.add_argument('--version', default=1.1, type=float, help='Version of the model')
