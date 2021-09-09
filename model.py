@@ -236,16 +236,27 @@ def generate_model_3d(opt):
                 print('loading pretrained model {}'.format(opt.pretrain_path))
                 pretrain = torch.load(opt.pretrain_path, map_location=torch.device('cpu'))
                 assert opt.arch == pretrain['arch']
-                model.load_state_dict(pretrain['state_dict'])
+                if 'jester' in opt.pretrain_path:
+                # if len(opt.modalities) == 1:
+                    # For model pretrained on Jester
+                    state_dict = {key.replace('module.', 'module.cnns.0.'): value for key, value in pretrain['state_dict'].items()}
+                    state_dict = {key.replace('module.cnns.0.fc', 'module.cnns.0.classifier'): value for key, value in state_dict.items()}
+                    
+                    # For ex-novo model trained on ChaLearn
+                    # state_dict = {key.replace('module.cnns.0.0.', 'module.cnns.0.'): value for key, value in pretrain['state_dict'].items()}
+                    # model.load_state_dict(state_dict)
+                else:
+                    model.load_state_dict(pretrain['state_dict'])
             elif opt.pretrain_path:
                 for i in range(len(opt.modalities)):
                     pretrain_path = '_'.join([opt.dataset, opt.model, opt.modalities[i], 'none', 'best.pth'])
                     pretrain_path = os.path.join(opt.pretrain_path, pretrain_path)
                     print('loading pretrained model {}'.format(pretrain_path))
                     pretrain = torch.load(pretrain_path, map_location=torch.device('cpu'))
-                    feature_state_dict = {key.replace('module.cnns.0.0.', ''): value for key, value in pretrain['state_dict'].items()}
+                    state_dict = {key.replace('module.cnns.0.0.', ''): value for key, value in pretrain['state_dict'].items()}
+                    state_dict = {key.replace('module.cnns.0.', ''): value for key, value in state_dict.items()}
                     assert opt.arch == pretrain['arch']
-                    model.module.cnns[i].load_state_dict(feature_state_dict)
+                    model.module.cnns[i].load_state_dict(state_dict)
             
             if opt.test or opt.ft_portion == 'none':
                 return model, model.parameters()
@@ -268,7 +279,7 @@ def generate_model_3d(opt):
                         )
                         # print('########## {}° network ##########\n{}################################'.format(i, model.module.cnns[i][0].classifier))
                     elif  opt.model == 'resnext':
-                        model.module.cnns[i].classifier = nn.Linear(model.module.cnns[i].classifier[1].in_features, opt.n_finetune_classes)
+                        model.module.cnns[i].classifier = nn.Linear(model.module.cnns[i].classifier.in_features, opt.n_finetune_classes)
                     model.module.cnns[i].classifier.cuda()
                 # print('########## CNNs ##########\n{}################################'.format(model.module.cnns))
             

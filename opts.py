@@ -64,6 +64,8 @@ def parse_opts():
     parser.add_argument('--aggr_type', default='none', type=str, help='(MLP | LSTM | avg | none')
     parser.add_argument('--feat_fusion', action='store_true', help='If true, modalities fusion is applied to feature level')
     parser.set_defaults(feat_fusion=False)
+    parser.add_argument('--SSA_loss', action='store_true', help='If true, Spatiotemporal Semantic Alignment is used to fuse information of each modality during the training.')
+    parser.set_defaults(feat_fusion=False)
     parser.add_argument('--version', default=1.1, type=float, help='Version of the model')
     parser.add_argument('--model_depth', default=18, type=int, help='Depth of resnet (10 | 18 | 34 | 50 | 101)')
     parser.add_argument('--resnet_shortcut', default='B', type=str, help='Shortcut type of resnet (A | B)')

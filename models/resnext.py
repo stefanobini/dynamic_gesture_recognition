@@ -178,13 +178,19 @@ class ResNeXt(nn.Module):
         x = self.layer4(x)
 
         x = self.avgpool(x)
+        
+        # For SSA loss
+        feat_map = x
+        variance, sample_mean = torch.var_mean(feat_map)
+        sub_map = torch.sub(feat_map, sample_mean)
+        correlation_matrix = torch.div(sub_map, variance)
 
         x = x.view(x.size(0), -1)
         
         if not self.feat_fusion:
             x = self.classifier(x)
         
-        return x
+        return x, correlation_matrix
 
 
 def get_fine_tuning_parameters(model, ft_portion):

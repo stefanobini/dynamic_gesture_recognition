@@ -7,6 +7,7 @@ from torch import nn
 from torch import optim
 from torch.optim import lr_scheduler
 from pytorch_model_summary import summary
+import copy
 
 from opts import parse_opts
 from model import generate_model, generate_model_2d, generate_model_3d
@@ -17,7 +18,7 @@ from target_transforms import ClassLabel, VideoID
 from target_transforms import Compose as TargetCompose
 from dataset import get_training_set, get_validation_set, get_test_set
 from utils import *
-from train import train_epoch
+from train import train_epoch, train_epoch_custom_loss
 from validation import val_epoch
 import test
 from torchinfo import summary
@@ -25,7 +26,7 @@ from torchinfo import summary
 
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES']='3'
+    os.environ['CUDA_VISIBLE_DEVICES']='0'
     opt = parse_opts()
     if opt.root_path != '':
         opt.video_path = os.path.join(opt.root_path, opt.video_path)
@@ -45,7 +46,7 @@ if __name__ == '__main__':
     opt.std = get_std(opt.norm_value)
     opt.store_name = '_'.join([opt.dataset, opt.model, '_'.join([modality for modality in opt.modalities]), opt.aggr_type])
     print(opt)
-    with open(os.path.join(opt.result_path, 'opts.json'), 'w') as opt_file:
+    with open(os.path.join(opt.result_path, 'opts_{}_{}_{}.json'.format(opt.dataset, opt.model, '_'.join([modality for modality in opt.modalities]), opt.aggr_type)), 'w') as opt_file:
         json.dump(vars(opt), opt_file)
 
     torch.manual_seed(opt.manual_seed)
@@ -57,7 +58,7 @@ if __name__ == '__main__':
     else:
         model, parameters = generate_model_2d(opt)
         input_shape = (opt.batch_size, opt.sample_duration, 3, opt.sample_size, opt.sample_size)
-    #'''
+    '''
     print('######### Parameters: #########')
     pytorch_total_params = sum(p.numel() for p in model.parameters() if
                                p.requires_grad)
@@ -70,7 +71,10 @@ if __name__ == '__main__':
     #'''
     # print('Input model shape: ', input_shape)
     # model_sum = summary(model.module, input_shape)
-
+    '''
+    for name, param in model.state_dict().items():
+        print(name)
+    '''
     criterion = nn.CrossEntropyLoss()
     if not opt.no_cuda:
         criterion = criterion.cuda()
@@ -128,17 +132,29 @@ if __name__ == '__main__':
             dampening = 0
         else:
             dampening = opt.dampening
-        optimizer = optim.SGD(
-            parameters,
-            lr=opt.learning_rate,
-            momentum=opt.momentum,
-            dampening=dampening,
-            weight_decay=opt.weight_decay,
-            nesterov=opt.nesterov)
-        if opt.lr_steps is None:
-            scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=opt.lr_patience)
-        else:
-            scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=opt.lr_steps, gamma=0.1)
+        
+        optimizers = list()
+        schedulers = list()
+        
+        for i in range(len(opt.modalities)):
+            if opt.SSA_loss:
+                params = model.module.cnns[i].parameters()
+            else:
+                params = model.parameters()
+            optimizer = optim.SGD(
+                params=params,
+                lr=opt.learning_rate,
+                momentum=opt.momentum,
+                dampening=dampening,
+                weight_decay=opt.weight_decay,
+                nesterov=opt.nesterov)
+            optimizers.append(optimizer)
+        
+            if opt.lr_steps is None:
+                scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=opt.lr_patience)
+            else:
+                scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=opt.lr_steps, gamma=0.1)
+            schedulers.append(scheduler)
         
     if not opt.no_val:
         spatial_transform = Compose([
@@ -178,8 +194,10 @@ if __name__ == '__main__':
 
         if not opt.no_train:
             # adjust_learning_rate(optimizer, i, opt)
-            train_epoch(i, train_loader, model, criterion, optimizer, opt,
-                        train_logger, train_batch_logger)
+            if opt.SSA_loss:
+                train_epoch_custom_loss(i, train_loader, model, criterion, optimizers, opt, train_logger, train_batch_logger)
+            else:
+                train_epoch(i, train_loader, model, criterion, optimizers[0], opt, train_logger, train_batch_logger)
             state = {
                 'epoch': i,
                 'arch': opt.arch,
@@ -192,10 +210,17 @@ if __name__ == '__main__':
         if not opt.no_val:
             validation_loss, prec1 = val_epoch(i, val_loader, model, criterion, opt,
                                         val_logger)
-            if opt.lr_steps is None:
-                scheduler.step(prec1)   # check if the prec1 is increased
+            if opt.SSA_loss:
+                for i in range(len(opt.modalities)):
+                    if opt.lr_steps is None:
+                        schedulers[i].step(prec1)   # check if the prec1 is increased
+                    else:
+                        schedulers[i].step()
             else:
-                scheduler.step()
+                if opt.lr_steps is None:
+                    schedulers[0].step(prec1)   # check if the prec1 is increased
+                else:
+                    schedulers[0].step()
             is_best = prec1 > best_prec1
             best_prec1 = max(prec1, best_prec1)
             state = {
@@ -205,7 +230,11 @@ if __name__ == '__main__':
                 'optimizer': optimizer.state_dict(),
                 'best_prec1': best_prec1
                 }
-            save_checkpoint(state, is_best, opt)        
+            save_checkpoint(state, is_best, opt)
+            # Save the singol network
+            if opt.SSA_loss and is_best:
+                for i in range(len(opt.modalities)):
+                    torch.save(model.module.cnns[i].state_dict(), '{}/{}_{}_{}_SSA_loss.pth'.format(opt.result_path, opt.dataset, opt.model, opt.modalities[i]))
 
     if opt.test:
         spatial_transform = Compose([

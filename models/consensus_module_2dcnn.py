@@ -20,7 +20,7 @@ class ConsensusModule2DCNN(nn.Module):
         for i in range(self.sample_duration):
             cnn = nn.Sequential(
                 # nn.AdaptiveAvgPool2d((32, 32)),
-                net(pretrained = True, num_classes = num_classes))
+                net(pretrained=True, num_classes=num_classes))
             self.cnns.append(cnn)
         
         self.aggr_type = aggr_type
@@ -36,21 +36,22 @@ class ConsensusModule2DCNN(nn.Module):
             self.aggregator = nn.LSTM(input_size=self.num_classes, hidden_size=self.num_classes, batch_first=False, bidirectional=True)
     
     def forward(self, x: Tensor) -> Tensor:
+        # print('INPUT SAMPLE: ', x.size())
         if self.aggr_type == 'MLP':
             # iterate on the frames
-            x = torch.cat([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size(1))], dim=1)
+            x = torch.cat([self.cnns[i](x[:, 0, i, :, :, :]) for i in range(x.size(1))], dim=1)
             x = self.aggregator(x)
         elif self.aggr_type == 'LSTM':
             h_0 = torch.randn(2, x.size(0), self.n_finetune_classes).cuda()
             c_0 = torch.randn(2, x.size(0), self.n_finetune_classes).cuda()
             for i in range(x.size(1)):
-                pred = self.cnns[i](x[:, i, :, :, :])
+                pred = self.cnns[i](x[:, 0, i, :, :, :])
                 x1, (h_0, c_0) = self.aggregator(pred.view(-1, x.size(0), self.n_finetune_classes), (h_0, c_0))
             x = x1[-1]
             x = x.view(x.size(0), -1, x.size(1))      # stack output of bidirectional cells, because it is doubled
             x = x.mean(dim=1)                                           # average the output of bidirectional cells
         elif self.aggr_type == 'avg':
-            x = torch.stack([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size()[1])])
+            x = torch.stack([self.cnns[i](x[:, 0, i, :, :, :]) for i in range(x.size()[1])])
             x = x.mean(dim=0)
         else:
             x = None

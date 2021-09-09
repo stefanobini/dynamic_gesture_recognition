@@ -39,16 +39,16 @@ class ConsensusModule3DCNN(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         if self.aggr_type == 'MLP':
             # iterate on the modalities
-            x = torch.cat([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size(1))], dim=1)
+            x = torch.cat([self.cnns[i](x[:, i, :, :, :])[0] for i in range(x.size(1))], dim=1)
             x = self.aggregator(x)
         elif self.aggr_type == 'avg':
-            x = torch.stack([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size()[1])])
+            x = torch.stack([self.cnns[i](x[:, i, :, :, :])[0] for i in range(x.size()[1])])
             x = x.mean(dim=0)
         elif self.aggr_type == 'max':
-            x = torch.stack([self.cnns[i](x[:, i, :, :, :]) for i in range(x.size()[1])])
+            x = torch.stack([self.cnns[i](x[:, i, :, :, :])[0] for i in range(x.size()[1])])
             x = x.max(dim=0)
         elif self.aggr_type == 'none':  # the case in which use a single modality
-            x = self.cnns[0](x[:, 0, :, :, :])
+            x, _ = self.cnns[0](x[:, 0, :, :, :])
         else:
             x = None
         return x
