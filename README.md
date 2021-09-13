@@ -115,6 +115,9 @@ python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd/MHI
 
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd/OF_frames --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --pretrain_path pretrained_models/jester_mobilenetv2_1.0x_RGB_16_best.pth --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --model mobilenetv2 --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 30 --lr_patience 3 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 7 --checkpoint 1 --n_val_samples 1 --no_hflip --modality OF
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd/OF_frames --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --pretrain_path pretrained_models/jester_mobilenetv2_1.0x_RGB_16_best.pth --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --model mobilenetv2 --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 30 --lr_patience 3 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 7 --checkpoint 1 --n_val_samples 1 --no_hflip --modality OF_D
+
+Res3D+ConvLSTM+MobileNet
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --dataset isogd --n_classes 249 --n_finetune_classes 249 --ft_portion complete --model res3d_clstm_mn --train_crop random --scale_step 0.95 --n_epochs 30 --lr_linear_decay 0.000001 --learning_rate 0.001 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none
 ```
 
 ### NVIDIA Gesture
@@ -178,6 +181,8 @@ python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd/MHI
 
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd/OF_frames --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --pretrain_path results/chalearn_isogd/isogd_mobilenetv2_1.0x_OF_16_best.pth --dataset isogd --n_classes 249 --n_finetune_classes 249 --model mobilenetv2 --groups 3 --sample_duration 16 --downsample 2 --batch_size 16 --n_threads 8 --model_depth 101 --n_val_samples 1 --no_train --no_val --test --test_subset test --modality OF --preds_per_video 249
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd/OF_frames --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --pretrain_path results/chalearn_isogd/isogd_mobilenetv2_1.0x_OF_D_16_best.pth --dataset isogd --n_classes 249 --n_finetune_classes 249 --model mobilenetv2 --groups 3 --sample_duration 16 --downsample 2 --batch_size 16 --n_threads 8 --model_depth 101 --n_val_samples 1 --no_train --no_val --test --test_subset test --modality OF_D --preds_per_video 249
+
+Res3D+ConvLSTM+MobileNet
 
 ```
 

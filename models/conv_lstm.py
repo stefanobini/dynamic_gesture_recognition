@@ -1,5 +1,8 @@
 import torch.nn as nn
 import torch
+from torch.autograd import Variable
+# from torchsummary import summary
+# from torchinfo import summary
 
 
 class ConvLSTMCell(nn.Module):
@@ -27,7 +30,8 @@ class ConvLSTMCell(nn.Module):
         self.kernel_size = kernel_size
         self.padding = kernel_size[0] // 2, kernel_size[1] // 2
         self.bias = bias
-
+        
+        # print('in_channels: {}\nout_channels: {}'.format(self.input_dim + self.hidden_dim, 4 * self.hidden_dim))
         self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
                               kernel_size=self.kernel_size,
@@ -184,3 +188,28 @@ class ConvLSTM(nn.Module):
         if not isinstance(param, list):
             param = [param] * num_layers
         return param
+
+
+if __name__ == "__main__":
+    kwargs = dict()
+    # input_shape = (256, 16, 28, 28)
+    input_shape_permuted = (8, 256, 28, 28)
+    input_var = Variable(torch.randn(input_shape_permuted))
+    # print('Input var shape: {}'.format(input_var.size()))
+    input_list = [input_var for i in range(16)]
+    input_tensor = torch.stack(input_list)
+    print('Shape of input tensor: {}'.format(input_tensor.size()))
+    # input_tensor = input_tensor.permute(0, 2, 1, 3, 4)
+    # print('Shape of permuted input tensor: {}'.format(input_tensor.size()))
+    #print('Lenght input list: {}'.format(len(input_list)))
+    #print('Shape of list element: {}'.format(input_list[0].shape))
+
+    model = ConvLSTM(input_dim=256, hidden_dim=256, kernel_size=(3,3), num_layers=2, batch_first=True, bias=True, return_all_layers=False)
+    # print(model)
+    model = model.cuda()
+    model = nn.DataParallel(model, device_ids=[0])
+    # model_sum = summary(model.module, input_shape_permuted)
+
+    # input_var = Variable(torch.randn(8, 3, 16, 112, 112))
+    output, hidden_state = model(input_tensor)
+    print('Output shape: {}\nHidden state: {}'.format(output[0].size(), hidden_state[0][1].size()))
