@@ -86,6 +86,7 @@ class ResNeXt(nn.Module):
                  layers,
                  sample_size,
                  sample_duration,
+                 out_module_size=128,
                  shortcut_type='B',
                  cardinality=32,
                  num_classes=400,
@@ -111,14 +112,14 @@ class ResNeXt(nn.Module):
         self.bn1 = nn.BatchNorm3d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool3d(kernel_size=(3, 3, 3), stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 128, layers[0], shortcut_type,
+        self.layer1 = self._make_layer(block, out_module_size, layers[0], shortcut_type,
                                        cardinality)
         self.layer2 = self._make_layer(
-            block, 256, layers[1], shortcut_type, cardinality, stride=2)
+            block, out_module_size*2, layers[1], shortcut_type, cardinality, stride=2)
         self.layer3 = self._make_layer(
-            block, 512, layers[2], shortcut_type, cardinality, stride=2)
+            block, out_module_size*4, layers[2], shortcut_type, cardinality, stride=2)
         self.layer4 = self._make_layer(
-            block, 1024, layers[3], shortcut_type, cardinality, stride=2)
+            block, out_module_size*8, layers[3], shortcut_type, cardinality, stride=2)
         last_duration = int(math.ceil(sample_duration / 16))
         #last_duration = 1
         last_size = int(math.ceil(sample_size / 32))
@@ -155,7 +156,8 @@ class ResNeXt(nn.Module):
                         planes * block.expansion,
                         kernel_size=1,
                         stride=stride,
-                        bias=False), nn.BatchNorm3d(planes * block.expansion))
+                        bias=False), 
+                    nn.BatchNorm3d(planes * block.expansion))
 
         layers = []
         layers.append(

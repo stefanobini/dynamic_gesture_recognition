@@ -39,7 +39,7 @@ class ConsensusModule2DCNN(nn.Module):
         # print('INPUT SAMPLE: ', x.size())
         if self.aggr_type == 'MLP':
             # iterate on the frames
-            x = torch.cat([self.cnns[i](x[:, 0, i, :, :, :]) for i in range(x.size(1))], dim=1)
+            x = torch.cat([self.cnns[i](x[:, 0, i, :, :, :]) for i in range(x.size(1))], dim=1)  # self.cnns[i](x[:, 0, i, :, :, :])[0], have insert [0], because the forward of Mobilenet2d return also the features
             x = self.aggregator(x)
         elif self.aggr_type == 'LSTM':
             h_0 = torch.randn(2, x.size(0), self.n_finetune_classes).cuda()
@@ -51,8 +51,8 @@ class ConsensusModule2DCNN(nn.Module):
             x = x.view(x.size(0), -1, x.size(1))      # stack output of bidirectional cells, because it is doubled
             x = x.mean(dim=1)                                           # average the output of bidirectional cells
         elif self.aggr_type == 'avg':
-            x = torch.stack([self.cnns[i](x[:, 0, i, :, :, :]) for i in range(x.size()[1])])
-            x = x.mean(dim=0)
+            x = torch.stack([self.cnns[i](x[:, 0, i, :, :, :]) for i in range(x.size()[1])], dim=1)
+            x = x.mean(dim=1)
         else:
             x = None
         return x

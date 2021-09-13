@@ -194,9 +194,9 @@ def generate_model(opt):
 
     return model, model.parameters()
 
-
+    
 def generate_model_3d(opt):
-    assert opt.model in ['resnext', 'mobilenetv2']
+    assert opt.model in ['resnext', 'mobilenetv2', 'res3d_clstm_mn']
                          
     if opt.model == 'mobilenetv2':
         from models.consensus_module_3dcnn import get_fine_tuning_parameters
@@ -221,6 +221,16 @@ def generate_model_3d(opt):
             modalities=opt.modalities,
             aggr_type=opt.aggr_type,
             feat_fusion=opt.feat_fusion)
+    elif opt.model == 'res3d_clstm_mn':
+        from models.res3d_clstm_mobilenet import Res3D_cLSTM_MobileNet
+        model = consensus_module_3dcnn.get_model(
+            num_classes=opt.n_classes,
+            n_finetune_classes=opt.n_finetune_classes,
+            sample_size=opt.sample_size,
+            sample_duration=opt.sample_duration,
+            net=opt.model,
+            modalities=opt.modalities,
+            aggr_type=opt.aggr_type)
 
     if not opt.no_cuda:
         model = model.cuda()

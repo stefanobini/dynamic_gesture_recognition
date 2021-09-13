@@ -22,6 +22,7 @@ def parse_opts():
     parser.add_argument('--train_crop', default='corner', type=str, help='Spatial cropping method in training. random is uniform. corner is selection from 4 corners and 1 center.  (random | corner | center)')
     parser.add_argument('--learning_rate', default=0.04, type=float, help='Initial learning rate (divided by 10 while training by lr scheduler)')
     parser.add_argument('--lr_steps', default=None, type=int, nargs='+', metavar='LRSteps', help='epochs to decay learning rate by 10')
+    parser.add_argument('--lr_linear_decay', default=None, type=float, help='Linear decay for decrement learning rate')
     parser.add_argument('--momentum', default=0.9, type=float, help='Momentum')
     parser.add_argument('--dampening', default=0.9, type=float, help='dampening of SGD')
     parser.add_argument('--weight_decay', default=1e-3, type=float, help='Weight Decay')
