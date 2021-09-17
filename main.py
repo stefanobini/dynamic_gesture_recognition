@@ -26,8 +26,8 @@ from torchinfo import summary
 
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES']='2'
     opt = parse_opts()
+    os.environ['CUDA_VISIBLE_DEVICES']=opt.gpu
     if opt.root_path != '':
         opt.video_path = os.path.join(opt.root_path, opt.video_path)
         opt.annotation_path = os.path.join(opt.root_path, opt.annotation_path)
@@ -76,7 +76,7 @@ if __name__ == '__main__':
         print(name)
     '''
     criterion = nn.CrossEntropyLoss()
-    if not opt.no_cuda:
+    if opt.gpu not None:
         criterion = criterion.cuda()
 
     # if opt.no_mean_norm and not opt.std_norm or opt.modality != 'RGB':

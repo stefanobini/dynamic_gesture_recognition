@@ -37,7 +37,7 @@ def val_epoch(epoch, data_loader, model, criterion, opt, logger):
         loss = criterion(outputs, targets)
         prec1, prec5 = calculate_accuracy(outputs.data, targets.data, topk=(1,5))
         for ii in range(len(opt.modalities)):
-            mod_prec1 = calculate_accuracy(cnns_outputs[ii].data, targets.data, topk=(1,)) if len(opt.modalities)==1 else calculate_accuracy(cnns_outputs[ii].data, targets.data, topk=(1,))
+            mod_prec1 = calculate_accuracy(cnns_outputs.data, targets.data, topk=(1,)) if len(opt.modalities)==1 else calculate_accuracy(cnns_outputs[ii].data, targets.data, topk=(1,))
             mods_prec1[opt.modalities[ii]].update(mod_prec1[0], inputs.size(0))
         top1.update(prec1, inputs.size(0))
         top5.update(prec5, inputs.size(0))
