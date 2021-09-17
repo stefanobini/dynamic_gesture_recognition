@@ -46,7 +46,7 @@ def test(data_loader, model, opt, class_names):
         # data_time.update(time.time() - end_time)
         with torch.no_grad():
             inputs = Variable(inputs)
-        outputs = model(inputs)
+        outputs, cnns_outputs, features_outputs = model(inputs)
         # print('Type: {}\nShape: {}\nPrediction:\n{}'. format(type(outputs), outputs.shape, outputs))
         if not opt.no_softmax_in_test:
             outputs = F.softmax(outputs, dim=1)

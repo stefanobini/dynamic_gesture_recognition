@@ -53,7 +53,7 @@ class Res3D_cLSTM_MobileNet(nn.Module):
         # print('MobileNet output shape: {}'.format(x[0].size()))
         # print('MobileNets output shape: {}'.format(x.size()))
         x = x.permute(0, 2, 1, 3, 4)     # (int(self.sample_duration/2), 4, 4, 1024)
-        #print('Reshape output shape: {}'.format(x.size()))
+        # print('Reshape tensor, before global pooling: {}'.format(x.size()))
         x = self.global_pooling(x)
         # print('Global average pooling shape: {}'.format(x.size()))
         

@@ -31,7 +31,8 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
         # print('########### Input ###########\nType: {}\nTensor size: {}\n\n#############################'.format(type(inputs), inputs.size()))
         inputs = Variable(inputs)
         targets = Variable(targets)
-        outputs = model(inputs)
+        # outputs = model(inputs)
+        outputs, cnns_outputs, features_outputs = model(inputs)
         '''
         print('***********target shape in train: ', targets.size())
         print('********input shape in train: ', inputs.size())
@@ -143,21 +144,21 @@ def train_epoch_custom_loss(epoch, data_loader, model, criterion, optimizers, op
         # print('########### Input ###########\nType: {}\nTensor size: {}\n\n#############################'.format(type(inputs), inputs.size()))
         inputs = Variable(inputs)
         targets = Variable(targets)
-        outputs = model(inputs)
+        outputs, cnns_outputs, features_outputs = model(inputs)
+        # print('Final output: {}\nCnns output: {}\nCNNs features: {}'.format(outputs.size(), cnns_outputs.size(), features_outputs.size()))
         mods_losses = list()
         corrs = list()
         final_loss = 0.
         for ii in range(len(opt.modalities)):
             optimizers[ii].zero_grad()
-            output, feat_map = model.module.cnns[ii](inputs[:, ii, :, :, :, :].cuda())
             # print(output)
             # print('### Feature map size: ', feat_map.size())
-            feat_map_T = torch.transpose(feat_map, 1, 2)
+            feat_map_T = torch.transpose(features_outputs[ii], 1, 2)
             sq_feat_map = feat_map_T.squeeze()
             # avg_feat_map = sq_feat_map
-            corr = torch.mul(feat_map, feat_map_T)
+            corr = torch.mul(features_outputs[ii], feat_map_T)
             corrs.append(corr)
-            loss = criterion(output, targets)   # index of the max log-probability
+            loss = criterion(cnns_outputs[ii], targets)   # index of the max log-probability
             mods_losses.append(loss)
         focal_reg_params = regularizer(mods_losses)
         # print('##### focal_reg_params #####\n{}###################', focal_reg_params)

@@ -196,7 +196,7 @@ def generate_model(opt):
 
     
 def generate_model_3d(opt):
-    assert opt.model in ['resnext', 'mobilenetv2', 'res3d_clstm_mn']
+    assert opt.model in ['resnext', 'mobilenetv2', 'res3d_clstm_mn', 'raar3d']
                          
     if opt.model == 'mobilenetv2':
         from models.consensus_module_3dcnn import get_fine_tuning_parameters
@@ -231,6 +231,19 @@ def generate_model_3d(opt):
             net=opt.model,
             modalities=opt.modalities,
             aggr_type=opt.aggr_type)
+    elif opt.model == 'raar3d':
+        # from models.res3d_clstm_mobilenet import Res3D_cLSTM_MobileNet
+        model = consensus_module_3dcnn.get_model(
+            num_classes=opt.n_classes,
+            n_finetune_classes=opt.n_finetune_classes,
+            sample_size=opt.sample_size,
+            sample_duration=opt.sample_duration,
+            net=opt.model,
+            modalities=opt.modalities,
+            aggr_type=opt.aggr_type,
+            shallow_layer_num=opt.shallow_layer_num,
+            middle_layer_num=opt.middle_layer_num,
+            high_layer_num=opt.high_layer_num)
 
     if not opt.no_cuda:
         model = model.cuda()
@@ -287,11 +300,9 @@ def generate_model_3d(opt):
                             nn.Dropout(0.2),
                             nn.Linear(model.module.cnns[i].classifier[1].in_features, opt.n_finetune_classes),
                         )
-                        # print('########## {}° network ##########\n{}################################'.format(i, model.module.cnns[i][0].classifier))
-                    elif  opt.model == 'resnext':
+                    elif  opt.model in ['resnext', 'res3d_clstm_mn']:
                         model.module.cnns[i].classifier = nn.Linear(model.module.cnns[i].classifier.in_features, opt.n_finetune_classes)
                     model.module.cnns[i].classifier.cuda()
-                # print('########## CNNs ##########\n{}################################'.format(model.module.cnns))
             
             parameters = get_fine_tuning_parameters(model, opt.ft_portion)
             return model, parameters

@@ -41,7 +41,7 @@ class Logger(object):
         for col in self.header:
             assert col in values
             write_values.append(values[col])
-
+        
         self.logger.writerow(write_values)
         self.log_file.flush()
 

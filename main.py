@@ -26,7 +26,7 @@ from torchinfo import summary
 
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES']='0'
+    os.environ['CUDA_VISIBLE_DEVICES']='2'
     opt = parse_opts()
     if opt.root_path != '':
         opt.video_path = os.path.join(opt.root_path, opt.video_path)
@@ -135,6 +135,7 @@ if __name__ == '__main__':
         
         optimizers = list()
         schedulers = list()
+        optimizer = None
         
         for i in range(len(opt.modalities)):
             if opt.SSA_loss:
@@ -149,8 +150,13 @@ if __name__ == '__main__':
                 weight_decay=opt.weight_decay,
                 nesterov=opt.nesterov)
             optimizers.append(optimizer)
-        
-            if opt.lr_steps is None:
+            
+            if opt.lr_linear_decay:
+                #the error can be done here
+                lr_step = (opt.learning_rate - opt.lr_linear_decay) / opt.n_epochs
+                lr_func = lambda epoch: (opt.n_epochs - epoch) / opt.n_epochs
+                scheduler = lr_scheduler.MultiplicativeLR(optimizer, lr_lambda=lr_func)   # linear decreasing of the learning rate
+            elif opt.lr_steps is None:
                 scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=opt.lr_patience)
             else:
                 scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=opt.lr_steps, gamma=0.1)
@@ -175,10 +181,13 @@ if __name__ == '__main__':
             shuffle=False,
             num_workers=opt.n_threads,
             pin_memory=True)
-        val_logger = Logger(
-            os.path.join(opt.result_path, 'val{}.log'.format(''.join(['_'+modality for modality in opt.modalities]))), ['epoch', 'loss', 'prec1', 'prec5'])
+        val_log_info = ['epoch', 'loss', 'prec1', 'prec5']
+        for modality in opt.modalities:
+            val_log_info.append(modality+'_prec1')
+        val_logger = Logger(os.path.join(opt.result_path, 'val{}.log'.format(''.join(['_'+modality for modality in opt.modalities]))), val_log_info)
 
     best_prec1 = 0
+    mods_best_prec1 = list([0. for modality in opt.modalities])
     if opt.resume_path:
         print('loading checkpoint {}'.format(opt.resume_path))
         checkpoint = torch.load(opt.resume_path)
@@ -208,16 +217,15 @@ if __name__ == '__main__':
             save_checkpoint(state, False, opt)
             
         if not opt.no_val:
-            validation_loss, prec1 = val_epoch(i, val_loader, model, criterion, opt,
-                                        val_logger)
+            validation_loss, prec1, mods_prec1 = val_epoch(i, val_loader, model, criterion, opt, val_logger)
             if opt.SSA_loss:
                 for i in range(len(opt.modalities)):
-                    if opt.lr_steps is None:
+                    if opt.lr_steps is None and opt.lr_linear_decay is None:
                         schedulers[i].step(prec1)   # check if the prec1 is increased
                     else:
                         schedulers[i].step()
             else:
-                if opt.lr_steps is None:
+                if opt.lr_steps is None and opt.lr_linear_decay is None:
                     schedulers[0].step(prec1)   # check if the prec1 is increased
                 else:
                     schedulers[0].step()
@@ -232,9 +240,12 @@ if __name__ == '__main__':
                 }
             save_checkpoint(state, is_best, opt)
             # Save the singol network
-            if opt.SSA_loss and is_best:
-                for i in range(len(opt.modalities)):
-                    torch.save(model.module.cnns[i].state_dict(), '{}/{}_{}_{}_SSA_loss.pth'.format(opt.result_path, opt.dataset, opt.model, opt.modalities[i]))
+            if opt.SSA_loss:
+                for modality in range(len(opt.modalities)):
+                    if mods_best_prec1[modality] > mods_prec1[modality]:
+                        mods_best_prec1[modality] = mods_prec1[modality]
+                        for ii in range(len(opt.modalities)):
+                            torch.save(model.module.cnns[ii].state_dict(), '{}/{}_{}_{}_SSA_loss.pth'.format(opt.result_path, opt.dataset, opt.model, opt.modalities[ii]))
 
     if opt.test:
         spatial_transform = Compose([
