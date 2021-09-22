@@ -76,7 +76,7 @@ if __name__ == '__main__':
         print(name)
     '''
     criterion = nn.CrossEntropyLoss()
-    if opt.gpu not None:
+    if opt.gpu is not None:
         criterion = criterion.cuda()
 
     # if opt.no_mean_norm and not opt.std_norm or opt.modality != 'RGB':
@@ -101,10 +101,10 @@ if __name__ == '__main__':
             # crop_method = Scale_original(opt.sample_size)
         spatial_transform = Compose([
             #RandomHorizontalFlip(),
-            RandomRotate(),
-            RandomResize(),
+            #RandomRotate(),
+            #RandomResize(),
             crop_method,
-            MultiplyValues(),
+            #MultiplyValues(),
             #Dropout(),
             #SaltImage(),
             #Gaussian_blur(),
@@ -154,8 +154,8 @@ if __name__ == '__main__':
             if opt.lr_linear_decay:
                 #the error can be done here
                 lr_step = (opt.learning_rate - opt.lr_linear_decay) / opt.n_epochs
-                lr_func = lambda epoch: (opt.n_epochs - epoch) / opt.n_epochs
-                scheduler = lr_scheduler.MultiplicativeLR(optimizer, lr_lambda=lr_func)   # linear decreasing of the learning rate
+                lr_func = lambda epoch: (opt.learning_rate - lr_step * epoch) / opt.learning_rate
+                scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_func, verbose=True)     # linear decreasing of the learning rate
             elif opt.lr_steps is None:
                 scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=opt.lr_patience)
             else:
@@ -200,7 +200,7 @@ if __name__ == '__main__':
 
     # print('run')
     for i in range(opt.begin_epoch, opt.n_epochs + 1):
-
+        # print('Epoch: {}\tComputed learning rate: {}\tScheduler learning rate: {}'.format(i, opt.learning_rate*lr_func(i), schedulers[0].get_last_lr()))
         if not opt.no_train:
             # adjust_learning_rate(optimizer, i, opt)
             if opt.SSA_loss:

@@ -84,8 +84,7 @@ def get_video_names_and_annotations(data, subset):
     return video_names, annotations
 
 
-def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
-                 sample_duration):
+def make_dataset(root_path, annotation_path, modalities, subset, n_samples_for_each_video, sample_duration):
     data = load_annotation_data(annotation_path)
     video_names, annotations = get_video_names_and_annotations(data, subset)
     class_to_idx = get_class_labels(data)
@@ -93,6 +92,7 @@ def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
     for name, label in class_to_idx.items():
         idx_to_class[label] = name
 
+    datasets = dict()
     dataset = []
     data_iter = tqdm(range(len(video_names)), '{} set loading'.format(subset), total=len(video_names))
     for i in data_iter:
@@ -100,11 +100,30 @@ def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
         if i % 1000 == 0:
             print('dataset loading [{}/{}]'.format(i, len(video_names)))
         '''
+        mod_folder = ''
+        video_paths = dict()
+        video_path = ''
+        for modality in modalities:
+            if modality == 'RGB':
+                mod_folder = 'RGB_frames'
+            elif modality == 'OF':
+                mod_folder = 'OF_frames'
+            elif modality == 'MHI':
+                mod_folder = 'MHI_frames'
+            
+            video_path = os.path.join(root_path, mod_folder, video_names[i])
+            if not os.path.exists(video_path):
+                print(video_path)
+                continue
+            video_paths[modality] = video_path
+        '''
         video_path = os.path.join(root_path, video_names[i])
         if not os.path.exists(video_path):
             print(video_path)
             continue
-
+        '''
+        
+        # work if the different modalities are sinchronized on the frame, also a list of indices have to be built
         n_frames_file_path = os.path.join(video_path, 'n_frames')
         n_frames = int(load_value_file(n_frames_file_path))
         if n_frames <= 0:
@@ -113,10 +132,10 @@ def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
         begin_t = 1
         end_t = n_frames
         sample = {
-            'video': video_path,
+            'videos': video_paths,
             'segment': [begin_t, end_t],
             'n_frames': n_frames,
-            #'video_id': video_names[i].split('/')[1]
+            # 'video_id': video_names[i].split('/')[1]
             'video_id': video_names[i]
         }
         if len(annotations) != 0:
@@ -163,6 +182,7 @@ class Jester(data.Dataset):
     def __init__(self,
                  root_path,
                  annotation_path,
+                 modalities,
                  subset,
                  n_samples_for_each_video=1,
                  spatial_transform=None,
@@ -171,10 +191,9 @@ class Jester(data.Dataset):
                  sample_duration=16,
                  get_loader=get_default_video_loader,
                  cnn_dim=3):
-        self.data, self.class_names = make_dataset(
-            root_path, annotation_path, subset, n_samples_for_each_video,
-            sample_duration)
-
+        self.data, self.class_names = make_dataset(root_path, annotation_path, modalities, subset, n_samples_for_each_video, sample_duration)
+        
+        self.modalities = modalities
         self.spatial_transform = spatial_transform
         self.temporal_transform = temporal_transform
         self.target_transform = target_transform
@@ -189,26 +208,36 @@ class Jester(data.Dataset):
         Returns:
             tuple: (image, target) where target is class_index of the target class.
         """
-        path = self.data[index]['video']
+        
         frame_indices = self.data[index]['frame_indices']
         if self.temporal_transform is not None:
-           frame_indices = self.temporal_transform(frame_indices)
-        clip = self.loader(path, frame_indices, self.sample_duration)
-        if self.spatial_transform is not None:
-            self.spatial_transform.randomize_parameters()
-            clip = [self.spatial_transform(img) for img in clip]
-        # im_dim = clip[0].size()[-2:]
-        if self.cnn_dim == 3:
-            clip = torch.stack(clip, 0).permute(1, 0, 2, 3)
-        else:
-            clip = torch.stack(clip, 0)
-        # print('clip shape: {}'.format(clip.shape))
-
+            frame_indices = self.temporal_transform(frame_indices)
+        
+        clips_list = list()
+        for modality in self.modalities:
+            path = self.data[index]['videos'][modality]
+            # print('PATH: {}\tMODALITY: {}\tFRAME INDICES: {}\tSAMPLE DURATION: {}\n'.format(path, modality, frame_indices, self.sample_duration))
+            # clip = self.loader(path, frame_indices)
+            clip = self.loader(path, frame_indices, self.sample_duration)
+            if self.spatial_transform is not None:
+                self.spatial_transform.randomize_parameters()
+                clip = [self.spatial_transform(img) for img in clip]
+            # im_dim = clip[0].size()[-2:]
+            if self.cnn_dim == 3:
+                clip = torch.stack(clip, 0).permute(1, 0, 2, 3)
+            else:
+                clip = torch.stack(clip, 0)
+            # print('clip shape: {}'.format(clip.shape))
+            
+            clips_list.append(clip)
+        
+        clips = torch.stack(clips_list, 0)  # trasform in a tensor
+            
         target = self.data[index]
         if self.target_transform is not None:
             target = self.target_transform(target)
-
-        return clip, target
+            
+        return clips, target
 
     def __len__(self):
         return len(self.data)

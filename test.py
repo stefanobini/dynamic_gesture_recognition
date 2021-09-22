@@ -53,8 +53,7 @@ def test(data_loader, model, opt, class_names):
         # print('Type: {}\nShape: {}\nPrediction:\n{}'. format(type(outputs), outputs.shape, outputs))
         for j in range(outputs.size(0)):
             if not (i == 0 and j == 0) and targets[j] != previous_video_id:
-                calculate_video_results(output_buffer, previous_video_id,
-                                        test_results, class_names, opt.preds_per_video, predictions)
+                calculate_video_results(output_buffer, previous_video_id, test_results, class_names, opt.preds_per_video, predictions)
                 output_buffer = []
             output_buffer.append(outputs[j].data.cpu())
             previous_video_id = targets[j]

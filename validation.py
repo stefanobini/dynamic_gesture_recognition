@@ -27,7 +27,7 @@ def val_epoch(epoch, data_loader, model, criterion, opt, logger):
     for i, (inputs, targets) in batch_iter:
         # data_time.update(time.time() - end_time)
 
-        if not opt.no_cuda:
+        if opt.gpu is not None:
             targets = targets.cuda()
         with torch.no_grad():
             inputs = Variable(inputs)

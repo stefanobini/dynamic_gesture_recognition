@@ -26,7 +26,7 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
     for i, (inputs, targets) in batch_iter:
         # data_time.update(time.time() - end_time)
 
-        if not opt.no_cuda:
+        if opt.gpu is not None:
             targets = targets.cuda()
         # print('########### Input ###########\nType: {}\nTensor size: {}\n\n#############################'.format(type(inputs), inputs.size()))
         inputs = Variable(inputs)

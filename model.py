@@ -120,7 +120,7 @@ def generate_model(opt):
 
 
 
-    if opt.gpu not None:
+    if opt.gpu is not None:
         model = model.cuda()
         model = nn.DataParallel(model, device_ids=None)
         '''
@@ -245,7 +245,7 @@ def generate_model_3d(opt):
             middle_layer_num=opt.middle_layer_num,
             high_layer_num=opt.high_layer_num)
 
-    if opt.gpu not None:
+    if opt.gpu is not None:
         model = model.cuda()
         model = nn.DataParallel(model, device_ids=None)
         '''
@@ -362,7 +362,7 @@ def generate_model_2d(opt):
                 sample_duration=opt.sample_duration,
                 aggr_type=opt.aggr_type)
 
-    if opt.gpu not None:
+    if opt.gpu is not None:
         model = model.cuda()
         # model = nn.DataParallel(model, device_ids=[0])
         model = nn.DataParallel(model)

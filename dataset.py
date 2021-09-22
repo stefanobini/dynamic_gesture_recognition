@@ -12,6 +12,7 @@ def get_training_set(opt, spatial_transform, temporal_transform,
         training_data = Jester(
             opt.video_path,
             opt.annotation_path,
+            opt.modalities,
             'training',
             spatial_transform=spatial_transform,
             temporal_transform=temporal_transform,
@@ -51,6 +52,7 @@ def get_validation_set(opt, spatial_transform, temporal_transform,
         validation_data = Jester(
             opt.video_path,
             opt.annotation_path,
+            opt.modalities,
             'validation',
             opt.n_val_samples,
             spatial_transform,
@@ -97,6 +99,7 @@ def get_test_set(opt, spatial_transform, temporal_transform, target_transform):
         test_data = Jester(
             opt.video_path,
             opt.annotation_path,
+            opt.modalities,
             subset,
             opt.n_val_samples,
             spatial_transform,

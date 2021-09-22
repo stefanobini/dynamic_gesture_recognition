@@ -83,8 +83,7 @@ def get_video_names_and_annotations(data, subset):
     return video_names, annotations
 
 
-def make_dataset(root_path, annotation_path, modalities, subset, n_samples_for_each_video,
-                 sample_duration):
+def make_dataset(root_path, annotation_path, modalities, subset, n_samples_for_each_video, sample_duration):
     data = load_annotation_data(annotation_path)
     video_names, annotations = get_video_names_and_annotations(data, subset)
     class_to_idx = get_class_labels(data)
@@ -243,39 +242,6 @@ class IsoGD(data.Dataset):
 
         return clips, target
 
-    '''
-    def __getitem__(self, index):
-        """
-        Args:
-            index (int): Index
-        Returns:
-            tuple: (image, target) where target is class_index of the target class.
-        """
-        path = self.data[index]['video']
-        frame_indices = self.data[index]['frame_indices']
-        if self.temporal_transform is not None:
-            frame_indices = self.temporal_transform(frame_indices)
-        if self.modality in ['D', 'OF_D', 'MHI_D']:
-            path = path.replace('M_', 'K_')
-        # print('PATH: {}\nFRAME INDICES: {}\nSAMPLE DURATION: {}\n'.format(path, frame_indices, self.sample_duration))
-        # clip = self.loader(path, frame_indices)
-        clip = self.loader(path, frame_indices, self.sample_duration)
-        if self.spatial_transform is not None:
-            self.spatial_transform.randomize_parameters()
-            clip = [self.spatial_transform(img) for img in clip]
-        # im_dim = clip[0].size()[-2:]
-        if self.cnn_dim == 3:
-            clip = torch.stack(clip, 0).permute(1, 0, 2, 3)
-        else:
-            clip = torch.stack(clip, 0)
-        # print('clip shape: {}'.format(clip.shape))
-
-        target = self.data[index]
-        if self.target_transform is not None:
-            target = self.target_transform(target)
-
-        return clip, target
-    '''
 
     def __len__(self):
         return len(self.data)
