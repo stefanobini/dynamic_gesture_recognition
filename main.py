@@ -101,8 +101,8 @@ if __name__ == '__main__':
             # crop_method = Scale_original(opt.sample_size)
         spatial_transform = Compose([
             #RandomHorizontalFlip(),
-            #RandomRotate(),
-            #RandomResize(),
+            RandomRotate(),
+            RandomResize(),
             crop_method,
             #MultiplyValues(),
             #Dropout(),
