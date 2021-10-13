@@ -17,6 +17,7 @@ from collections import namedtuple
 from models.utils import load_pretrained_checkpoint
 from models.Operations import *
 
+
 class Cell(nn.Module):
 
     def __init__(self, genotype, C_prev_prev, C_prev, C, reduction_prev, normal):
@@ -71,6 +72,8 @@ class Cell(nn.Module):
             s = h1 + h2
             states += [s]
         return torch.cat([states[i] for i in self._concat], dim=1)
+
+
 class MaxPool3dSamePadding(nn.MaxPool3d):
 
     def compute_pad(self, dim, s):
@@ -179,20 +182,26 @@ class Unit3D(nn.Module):
         if self._activation_fn is not None:
             x = self._activation_fn(x)
         return x
+
+
 def tensor_split(t):
     arr = torch.split(t.permute(0, 1, 3, 4, 2), 1, dim=4)  # dim = 4 is time dimension
     arr = [x.view(x.size()[:-1]) for x in arr]
     return arr
+
 
 def tensor_merge(arr):
     arr = [x.view(list(x.size()) + [1]) for x in arr]
     t = torch.cat(arr, dim=4)
     return t.permute(0, 1, 4, 2, 3)
 
+
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=1, bias=False)
+
+
 class BasicSKBlock(nn.Module):
     """
     Basic Heatmap Generating Block
@@ -257,8 +266,10 @@ class SATT_Module(nn.Module):
 
             satt = [oneconv(a, b) for a, b in zip(tarr, attarr)]
             return tensor_merge(satt)
+        
         s_arr = hand_attention(d_arr, gmap, self.conv1d_ly1)
         return s_arr
+
 
 class DATT_Module(nn.Module):
     def __init__(self, w, inplanes):
@@ -298,6 +309,7 @@ class DATT_Module(nn.Module):
         arrrp = [(a + torch.ones(a.size()).cuda()) * b for a, b in zip(tensor_split(arrrp), tensor_split(x))]
         arrrp = [oneconv(a, b) for a, b in zip(tensor_split(x), arrrp)]
         return tensor_merge(arrrp)
+
 
 class InceptionI3d(nn.Module):
     VALID_ENDPOINTS = (
@@ -430,6 +442,7 @@ class InceptionI3d(nn.Module):
 
         self.build()
 
+
     def replace_logits(self, num_classes):
         self._num_classes = num_classes
         self.logits = Unit3D(in_channels=384 + 384 + 128 + 128, output_channels=self._num_classes,
@@ -440,19 +453,23 @@ class InceptionI3d(nn.Module):
                              use_bias=True,
                              name='logits')
 
+
     def build(self):
         for k in self.end_points.keys():
             self.add_module(k, self.end_points[k])
+
 
     def forward(self, x):
         # TO CHANGEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEe
         # x = x[:, 0, :, :, :, :]
         inp = x
+        
         def merge_skmap(a, b):
             a_arr = tensor_split(a)
             b_arr = tensor_split(b)
             c = [torch.cat([am, bm], dim=1) for am, bm in zip(a_arr, b_arr)]
             return tensor_merge(c)
+            
         gmap1 = self.SKB1(inp)
         gmap2 = self.SKB2(merge_skmap(inp, gmap1))
         gmap3 = self.SKB3(merge_skmap(inp, gmap2))
@@ -501,12 +518,36 @@ class InceptionI3d(nn.Module):
         # return logits.squeeze(), gmap3, (f1, f2, f3,f4, f5)
         return logits.squeeze(), gmap3
 
+
 def Network(args, num_classes, genotype, pretrained=False):
     Net = InceptionI3d(args, num_classes=num_classes, genotype=genotype)
     if pretrained:
         Net = load_pretrained_checkpoint(Net, pretrained)
         logging.info("Load Pre-trained model state_dict Done !")
     return Net
+    
+
+def get_fine_tuning_parameters(model, ft_portion):
+    if ft_portion == "complete":
+        return model.parameters()
+
+    elif ft_portion == "last_layer":
+        ft_module_names = []
+        ft_module_names.append('logits')
+
+        parameters = []
+        for k, v in model.named_parameters():
+            for ft_module in ft_module_names:
+                if ft_module in k:
+                    parameters.append({'params': v})
+                    break
+            else:
+                parameters.append({'params': v, 'lr': 0.0})
+        return parameters
+
+    else:
+        raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
+
 
 if __name__ == '__main__':
     Genotype = namedtuple('Genotype', 'normal1 normal_concat1 normal2 normal_concat2 normal3 normal_concat3')

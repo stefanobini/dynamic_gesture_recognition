@@ -8,7 +8,7 @@ from torchinfo import summary
 from models.mobilenetv2 import get_model as mobilenetv2
 from models.resnext import resnext101 as resnext
 from models.res3d_clstm_mobilenet import Res3D_cLSTM_MobileNet
-from models import RAAR3DNet
+from models import RAAR3DNet, NI3D
 '''
 from mobilenetv2 import get_model as mobilenetv2
 from resnext import resnext101 as resnext
@@ -23,14 +23,12 @@ class ConsensusModule3DCNN(nn.Module):
         self.n_finetune_classes = n_finetune_classes
         self.modalities = modalities
         
-        
-        
         self.cnns = nn.ModuleList()
         for modality in self.modalities: 
-            if net == RAAR3DNet.Network:
+            if net in [RAAR3DNet.Network, NI3D.Network]:
                 cnn = net(args=kwargs, num_classes=num_classes, genotype=kwargs['genotype'])
             else:
-                cnn = net(num_classes=num_classes, sample_size=112, sample_duration=16, **kwargs)
+                cnn = net(num_classes=num_classes, sample_size=sample_size, sample_duration=sample_duration, **kwargs)
             self.cnns.append(cnn)
         
         self.aggr_type = aggr_type
@@ -177,8 +175,19 @@ def get_model(net='resnext', *args, **kwargs):
                      ('conv_1x1x1', 2), ('skip_connect', 3), ('skip_connect', 2)], normal_concat2=range(2, 6),
             normal3=[('conv_3x3x3', 1), ('conv_3x3x3', 0), ('conv_3x3x3', 1), ('conv_1x1x1', 2), ('conv_1x1x1', 3),
                      ('conv_1x1x1', 2), ('conv_3x3x3', 1), ('conv_1x1x1', 4)], normal_concat3=range(2, 6))
-        # model = RAAR3DNet.Network(kwargs, kwargs['num_classes'], genotype=genotype)
         model = ConsensusModule3DCNN(net=RAAR3DNet.Network, genotype=genotype, *args, **kwargs)
+    elif net == 'ni3d':
+        from collections import namedtuple
+        Genotype = namedtuple('Genotype', 'normal1 normal_concat1 normal2 normal_concat2 normal3 normal_concat3')
+        genotype = Genotype(
+            normal1=[('conv_1x1x1', 0), ('conv_3x3x3', 1), ('Max_pool_3x3x3', 0), ('skip_connect', 1), ('conv_1x1x1', 2),
+                     ('Max_pool_3x3x3', 0), ('skip_connect', 0), ('conv_3x3x3', 2)], normal_concat1=range(2, 6),
+            normal2=[('Max_pool_3x3x3', 0), ('conv_3x3x3', 1), ('conv_1x1x1', 2), ('conv_3x3x3', 0), ('skip_connect', 3),
+                     ('conv_1x1x1', 2), ('skip_connect', 3), ('skip_connect', 2)], normal_concat2=range(2, 6),
+            normal3=[('conv_3x3x3', 1), ('conv_3x3x3', 0), ('conv_3x3x3', 1), ('conv_1x1x1', 2), ('conv_1x1x1', 3),
+                     ('conv_1x1x1', 2), ('conv_3x3x3', 1), ('conv_1x1x1', 4)], normal_concat3=range(2, 6))
+        model = ConsensusModule3DCNN(net=NI3D.Network, genotype=genotype, *args, **kwargs)
+    
     return model
 
     

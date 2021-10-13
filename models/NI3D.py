@@ -8,11 +8,17 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .Operations import *
 from torch.autograd import Variable
 import pdb
-from utils import load_pretrained_checkpoint
 import logging
+import torch
+import argparse
+from collections import namedtuple
+
+from models.utils import load_pretrained_checkpoint
+from models.Operations import *
+
+
 class Cell(nn.Module):
 
     def __init__(self, genotype, C_prev_prev, C_prev, C, reduction_prev, normal):
@@ -67,6 +73,8 @@ class Cell(nn.Module):
             s = h1 + h2
             states += [s]
         return torch.cat([states[i] for i in self._concat], dim=1)
+        
+        
 class MaxPool3dSamePadding(nn.MaxPool3d):
 
     def compute_pad(self, dim, s):
@@ -238,7 +246,7 @@ class InceptionI3d(nn.Module):
         C_curr = 64
         C_prev_prev, C_prev, C_curr = C_curr * 3, C_curr * 3, C_curr
         reduction_prev = False
-        for i in range(args.shallow_layer_num):
+        for i in range(args['shallow_layer_num']):
             cell = Cell(genotype, C_prev_prev=C_prev_prev, C_prev=C_prev, C=C_curr, reduction_prev=reduction_prev, normal=1)
             self.end_points[end_point] += [cell]
             C_prev_prev, C_prev = C_prev, cell.multiplier * C_curr
@@ -251,7 +259,7 @@ class InceptionI3d(nn.Module):
         end_point = 'cell2'
         self.end_points[end_point] = nn.ModuleList()
         C_prev_prev, C_prev, C_curr = C_prev, C_prev, C_curr
-        for i in range(args.middle_layer_num):
+        for i in range(args['middle_layer_num']):
             if i == 2:
                 C_curr *= 2
                 reduction_prev = False
@@ -272,7 +280,7 @@ class InceptionI3d(nn.Module):
         self.end_points[end_point] = nn.ModuleList()
         C_prev_prev, C_prev, C_curr = C_prev, C_prev, C_curr
         reduction_prev = False
-        for i in range(args.high_layer_num):
+        for i in range(args['high_layer_num']):
             if i == 1:
                 C_curr *= 2
             cell = Cell(genotype, C_prev_prev=C_prev_prev, C_prev=C_prev, C=C_curr, reduction_prev=reduction_prev, normal=3)
@@ -345,8 +353,6 @@ def Network(args, num_classes, genotype, pretrained=None):
     return Net
 
 if __name__ == '__main__':
-    import torch
-    from collections import namedtuple
     Genotype = namedtuple('Genotype', 'normal1 normal_concat1 normal2 normal_concat2 normal3 normal_concat3')
     genotype = Genotype(
         normal1=[('conv_1x1x1', 0), ('conv_3x3x3', 1), ('Max_pool_3x3x3', 0), ('skip_connect', 1), ('conv_1x1x1', 2),
@@ -356,7 +362,13 @@ if __name__ == '__main__':
         normal3=[('conv_3x3x3', 1), ('conv_3x3x3', 0), ('conv_3x3x3', 1), ('conv_1x1x1', 2), ('conv_1x1x1', 3),
                  ('conv_1x1x1', 2), ('conv_3x3x3', 1), ('conv_1x1x1', 4)], normal_concat3=range(2, 6))
 
-    model = Network(249, genotype)
-    inputs = torch.randn(2, 3, 32, 224, 224)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--shallow_layer_num', default=2)
+    parser.add_argument('--middle_layer_num', default=5)
+    parser.add_argument('--high_layer_num', default=2)
+    args = parser.parse_args()
+    
+    model = Network(args, num_classes=249, genotype=genotype, pretrained=False).cuda(0)
+    inputs = torch.randn(8, 3, 32, 224, 224).cuda(0)
     output = model(inputs)
-    print(output.shape)
+    print(output[0].shape)

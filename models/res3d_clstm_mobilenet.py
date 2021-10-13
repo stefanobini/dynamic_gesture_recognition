@@ -66,6 +66,28 @@ class Res3D_cLSTM_MobileNet(nn.Module):
         return x, features
         
 
+def get_fine_tuning_parameters(model, ft_portion):
+    if ft_portion == "complete":
+        return model.parameters()
+
+    elif ft_portion == "last_layer":
+        ft_module_names = []
+        ft_module_names.append('classifier')
+
+        parameters = []
+        for k, v in model.named_parameters():
+            for ft_module in ft_module_names:
+                if ft_module in k:
+                    parameters.append({'params': v})
+                    break
+            else:
+                parameters.append({'params': v, 'lr': 0.0})
+        return parameters
+
+    else:
+        raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
+
+
 if __name__ == "__main__":
     kwargs = dict()
     model = Res3D_cLSTM_MobileNet(num_classes=249, sample_size=112, sample_duration=16)

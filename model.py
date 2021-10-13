@@ -196,10 +196,11 @@ def generate_model(opt):
 
     
 def generate_model_3d(opt):
-    assert opt.model in ['resnext', 'mobilenetv2', 'res3d_clstm_mn', 'raar3d']
+    assert opt.model in ['resnext', 'mobilenetv2', 'res3d_clstm_mn', 'raar3d', 'ni3d']
+    
+    from models.consensus_module_3dcnn import get_fine_tuning_parameters
                          
     if opt.model == 'mobilenetv2':
-        from models.consensus_module_3dcnn import get_fine_tuning_parameters
         model = consensus_module_3dcnn.get_model(
             num_classes=opt.n_classes,
             n_finetune_classes=opt.n_finetune_classes,
@@ -209,7 +210,6 @@ def generate_model_3d(opt):
             modalities=opt.modalities,
             aggr_type=opt.aggr_type)
     elif opt.model == 'resnext':
-        from models.consensus_module_3dcnn import get_fine_tuning_parameters
         model = consensus_module_3dcnn.get_model(
             num_classes=opt.n_classes,
             n_finetune_classes=opt.n_finetune_classes,
@@ -222,7 +222,6 @@ def generate_model_3d(opt):
             aggr_type=opt.aggr_type,
             feat_fusion=opt.feat_fusion)
     elif opt.model == 'res3d_clstm_mn':
-        from models.res3d_clstm_mobilenet import Res3D_cLSTM_MobileNet
         model = consensus_module_3dcnn.get_model(
             num_classes=opt.n_classes,
             n_finetune_classes=opt.n_finetune_classes,
@@ -232,7 +231,20 @@ def generate_model_3d(opt):
             modalities=opt.modalities,
             aggr_type=opt.aggr_type)
     elif opt.model == 'raar3d':
-        # from models.res3d_clstm_mobilenet import Res3D_cLSTM_MobileNet
+        # from models.res3d_clstm_mobilenet import get_fine_tuning_parameters
+        model = consensus_module_3dcnn.get_model(
+            num_classes=opt.n_classes,
+            n_finetune_classes=opt.n_finetune_classes,
+            sample_size=opt.sample_size,
+            sample_duration=opt.sample_duration,
+            net=opt.model,
+            modalities=opt.modalities,
+            aggr_type=opt.aggr_type,
+            shallow_layer_num=opt.shallow_layer_num,
+            middle_layer_num=opt.middle_layer_num,
+            high_layer_num=opt.high_layer_num)
+    elif opt.model == 'ni3d':
+        # from models.res3d_clstm_mobilenet import get_fine_tuning_parameters
         model = consensus_module_3dcnn.get_model(
             num_classes=opt.n_classes,
             n_finetune_classes=opt.n_finetune_classes,

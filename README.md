@@ -61,6 +61,18 @@ Used
 ```bash
 python3 utils/chalearn_isogd_json.py annotation_ChaLearn_IsoGD
 ```
+## Pre-training
+
+### 20BN-Jester
+ResNeXt-101
+```bash
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/jester --annotation_path annotation_Jester/jester.json --result_path results/jester/resnext --dataset jester --n_classes 27 --n_finetune_classes 27 --ft_portion complete --model resnext --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 60 --lr_steps 30 45 --learning_rate 0.01 --weight_decay 0.001 --sample_duration 32 --downsample 1 --batch_size 8 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none --gpu 3
+```
+
+Res3D + ConvLSTM + MobileNet
+```bash
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/jester --annotation_path annotation_Jester/jester.json --result_path results/jester --dataset jester --n_classes 27 --n_finetune_classes 27 --ft_portion complete --model res3d_clstm_mn --train_crop random --scale_step 0.95 --n_epochs 30 --lr_linear_decay 0.001 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 8 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none --gpu 2
+```
 
 ## Training
 
@@ -91,8 +103,8 @@ python3 main.py --root_path ./ \
 
 ```bash
 RESNEXT-101
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd/RGB-D_frames --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --pretrain_path pretrained_models/jester_resnext_101_RGB_16_best.pth --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --model resnext --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 30 --lr_patience 3 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 32 --checkpoint 1 --n_val_samples 1 --no_hflip --modality RGB
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --pretrain_path pretrained_models/jester_resnext_101_RGB_16_best.pth --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --model resnext --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 60 --lr_steps 30 45 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd/resnext --pretrain_path pretrained_models/jester_resnext_101_RGB_16_best.pth --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --model resnext --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 60 --lr_steps 30 45 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none --gpu 3
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd/ --pretrain_path results/jester/resnext/jester_resnext_RGB_none_best.pth --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --model resnext --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 20 --lr_steps 10 15 --learning_rate 0.1 --sample_duration 32 --downsample 1 --batch_size 16 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none --gpu 3
 
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --pretrain_path pretrained_models/jester_resnext_101_RGB_16_best.pth --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --model resnext --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 60 --lr_steps 30 45 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities D --aggr_type none
 
@@ -117,10 +129,15 @@ python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd/OF_
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd/OF_frames --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --pretrain_path pretrained_models/jester_mobilenetv2_1.0x_RGB_16_best.pth --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --model mobilenetv2 --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 30 --lr_patience 3 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 7 --checkpoint 1 --n_val_samples 1 --no_hflip --modality OF_D
 
 Res3D+ConvLSTM+MobileNet
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --dataset isogd --n_classes 249 --n_finetune_classes 249 --ft_portion complete --model res3d_clstm_mn --train_crop random --scale_step 0.95 --n_epochs 30 --lr_linear_decay 0.001 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 16 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd/res3d_clstm_mobilenet --pretrain_path pretrained_models/jester_res3d_clstm_mn_RGB_none_best.pth --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --model res3d_clstm_mn --train_crop random --scale_step 0.95 --n_epochs 15 --lr_linear_decay 0.0001 --learning_rate 0.01 --sample_duration 16 --downsample 2 --batch_size 8 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none --gpu 3
 
 RAAR3DNet
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --dataset isogd --n_classes 249 --n_finetune_classes 249 --ft_portion complete --model raar3d --train_crop random --scale_step 0.95 --n_epochs 50 --lr_patience 4 --learning_rate 0.01 --weight_decay 0.0003 --sample_size 224 --sample_duration 16 --downsample 2 --batch_size 8 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd/raar3d --dataset isogd --n_classes 249 --n_finetune_classes 249 --ft_portion complete --model raar3d --train_crop random --scale_step 0.95 --n_epochs 50 --lr_patience 4 --learning_rate 0.01 --weight_decay 0.0003 --sample_size 224 --sample_duration 16 --downsample 2 --batch_size 8 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none
+
+NI3D
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd/ni3d --dataset isogd --n_classes 249 --n_finetune_classes 249 --ft_portion complete --model ni3d --train_crop random --scale_step 0.95 --n_epochs 50 --lr_patience 5 --learning_rate 0.01 --weight_decay 0.0003 --sample_size 224 --sample_duration 32 --downsample 1 --batch_size 8 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none --gpu 3
+
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd/ni3d --pretrain_path results/chalearn_isogd/ni3d/isogd_ni3d_RGB_none_best.pth --dataset isogd --n_classes 249 --n_finetune_classes 249 --ft_portion complete --model raar3d --train_crop random --scale_step 0.95 --n_epochs 15 --lr_patience 2 --learning_rate 0.01 --weight_decay 0.0003 --sample_size 224 --sample_duration 32 --downsample 1 --batch_size 8 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none --gpu 3
 
 ```
 
@@ -128,7 +145,9 @@ python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --a
 ```bash
  -W ignore
 RESNEXT-101
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/nvgesture/RGB-D_frames_aug --annotation_path annotation_NVGesture/nvgesture.json --result_path results/nvgesture --pretrain_path pretrained_models/jester_resnext_101_RGB_16_best.pth --dataset nvgesture --n_classes 27 --n_finetune_classes 25 --ft_portion complete --model resnext --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 30 --lr_patience 2 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 32 --checkpoint 1 --n_val_samples 1 --no_hflip --modality RGB
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/nvgesture --annotation_path annotation_NVGesture/nvgesture.json --result_path results/nvgesture/resnext --pretrain_path pretrained_models/jester_resnext_101_RGB_16_best.pth --dataset nvgesture --n_classes 27 --n_finetune_classes 25 --ft_portion complete --model resnext --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 30 --lr_patience 2 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 32 --checkpoint 1 --n_val_samples 1 --no_hflip --modality RGB --aggr_type none --gpu 3
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/nvgesture --annotation_path annotation_NVGesture/nvgesture.json --result_path results/nvgesture/ --pretrain_path results/jester/resnext/jester_resnext_RGB_none_best.pth --dataset nvgesture --n_classes 27 --n_finetune_classes 25 --ft_portion complete --model resnext --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 60 --lr_steps 30 45 --learning_rate 0.1 --sample_duration 32 --downsample 1 --batch_size 32 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none --gpu 3
+
 
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/nvgesture/RGB-D_frames_aug --annotation_path annotation_NVGesture/nvgesture.json --result_path results/nvgesture --pretrain_path pretrained_models/jester_resnext_101_RGB_16_best.pth --dataset nvgesture --n_classes 27 --n_finetune_classes 25 --ft_portion complete --model resnext --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 20 --lr_patience 2 --learning_rate 0.1 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 32 --checkpoint 1 --n_val_samples 1 --no_hflip --modality D
 
@@ -157,12 +176,15 @@ python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/nvgesture
 ```bash
 python3 main.py --root_path ./ --video_path datasets/jester --annotation_path annotation_Jester/jester.json --result_path results/jester --pretrain_path pretrained_models/jester_resnext_101_RGB_16_best.pth --dataset jester --n_classes 27 --n_finetune_classes 27 --model resnext --groups 3 --sample_duration 16 --downsample 2 --batch_size 64 --n_threads 16 --test --model_depth 101 --no_train --no_val --test_subset val --preds_per_video 5 --ft_portion none
 python3 main.py --root_path ./ --video_path ../../Efficient-3DCNNs-master/datasets/jester --annotation_path annotation_Jester/jester.json --result_path results/jester --pretrain_path ../../Efficient-3DCNNs-master/pretrained_models/jester_mobilenetv2_1.0x_RGB_16_best.pth --dataset jester --n_classes 27 --n_finetune_classes 27 --model mobilenetv2 --width_mult 1.0 --sample_duration 16 --downsample 2 --batch_size 64 --n_threads 16 --test --no_train --no_val --test_subset val --ft_portion none
+
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/jester --annotation_path annotation_Jester/jester.json --result_path results/jester --pretrain_path results/jester/resnext_101 --dataset jester --n_classes 27 --n_finetune_classes 27 --model resnext --model_depth 101 --groups 3 --sample_duration 32 --downsample 1 --batch_size 8 --n_threads 4 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities RGB --aggr_type none --preds_per_video 27 --gpu 3
+
 ```
 
 ### ChaLearn LAP IsoGD
 ```bash
 RESNEXT-101
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --pretrain_path results/chalearn_isogd/isogd_resnext_RGB_D_MLP_best.pth --dataset isogd --n_classes 249 --n_finetune_classes 249 --model resnext --groups 3 --sample_duration 16 --downsample 2 --batch_size 16 --n_threads 8 --model_depth 101 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities RGB D --aggr_type MLP --feat_fusion --preds_per_video 249
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --pretrain_path results/chalearn_isogd --dataset isogd --n_classes 249 --n_finetune_classes 249 --model raar3d --sample_size 224 --sample_duration 16 --downsample 2 --batch_size 16 --n_threads 4 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities RGB --aggr_type none --feat_fusion --preds_per_video 249 --gpu 3
 
 
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --pretrain_path results/chalearn_isogd/isogd_resnext_RGB_none_best.pth --dataset isogd --n_classes 249 --n_finetune_classes 249 --model resnext --groups 3 --sample_duration 16 --downsample 2 --batch_size 16 --n_threads 8 --model_depth 101 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities RGB --aggr_type none --preds_per_video 249

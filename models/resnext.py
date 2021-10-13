@@ -75,7 +75,7 @@ class ResNeXtBottleneck(nn.Module):
 
         out += residual
         out = self.relu(out)
-
+        
         return out
 
 
@@ -125,7 +125,7 @@ class ResNeXt(nn.Module):
         last_size = int(math.ceil(sample_size / 32))
         self.avgpool = nn.AvgPool3d(
             (last_duration, last_size, last_size), stride=1)
-            
+        
         self.classifier = nn.Linear(cardinality * 32 * block.expansion, num_classes)
         
         for m in self.modules():
