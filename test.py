@@ -47,7 +47,6 @@ def test(data_loader, model, opt, class_names):
         with torch.no_grad():
             inputs = Variable(inputs)
         outputs = model(inputs)
-        # print('Type: {}\nShape: {}\nPrediction:\n{}'. format(type(outputs), outputs.shape, outputs))
         if not opt.no_softmax_in_test:
             outputs = F.softmax(outputs, dim=1)
         # print('Type: {}\nShape: {}\nPrediction:\n{}'. format(type(outputs), outputs.shape, outputs))
@@ -81,9 +80,9 @@ def test(data_loader, model, opt, class_names):
     
     # Save predictions
     predictions = torch.Tensor(predictions)
-    torch.save(predictions, '{}/predictions_{}.pt'.format(opt.result_path, '_'.join(modality for modality in opt.modalities)))
+    torch.save(predictions, '{}/predictions_{}.pt'.format(opt.result_path, opt.modality))
     
     with open(
-            os.path.join(opt.result_path, '{}_{}.json'.format(opt.test_subset, '_'.join(modality for modality in opt.modalities))),
+            os.path.join(opt.result_path, '{}_{}.json'.format(opt.test_subset, opt.modality)),
             'w') as f:
         json.dump(test_results, f)

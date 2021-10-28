@@ -88,10 +88,7 @@ class ResNeXt(nn.Module):
                  sample_duration,
                  shortcut_type='B',
                  cardinality=32,
-                 num_classes=400,
-                 feat_fusion=False):
-        
-        self.feat_fusion = feat_fusion
+                 num_classes=400):
         self.inplanes = 64
         super(ResNeXt, self).__init__()
         self.conv1 = nn.Conv3d(
@@ -125,7 +122,7 @@ class ResNeXt(nn.Module):
         self.avgpool = nn.AvgPool3d(
             (last_duration, last_size, last_size), stride=1)
             
-        self.classifier = nn.Linear(cardinality * 32 * block.expansion, num_classes)
+        self.fc = nn.Linear(cardinality * 32 * block.expansion, num_classes)
         
         for m in self.modules():
             if isinstance(m, nn.Conv3d):
@@ -178,19 +175,12 @@ class ResNeXt(nn.Module):
         x = self.layer4(x)
 
         x = self.avgpool(x)
-        
-        # For SSA loss
-        feat_map = x
-        variance, sample_mean = torch.var_mean(feat_map)
-        sub_map = torch.sub(feat_map, sample_mean)
-        correlation_matrix = torch.div(sub_map, variance)
 
         x = x.view(x.size(0), -1)
         
-        if not self.feat_fusion:
-            x = self.classifier(x)
+        x = self.fc(x)
         
-        return x, correlation_matrix
+        return x
 
 
 def get_fine_tuning_parameters(model, ft_portion):
@@ -199,7 +189,7 @@ def get_fine_tuning_parameters(model, ft_portion):
 
     elif ft_portion == "last_layer":
         ft_module_names = []
-        ft_module_names.append('classifier')
+        ft_module_names.append('fc')
 
         parameters = []
         for k, v in model.named_parameters():
