@@ -220,7 +220,8 @@ def generate_model_3d(opt):
             net=opt.model,
             modalities=opt.modalities,
             aggr_type=opt.aggr_type,
-            feat_fusion=opt.feat_fusion)
+            feat_fusion=opt.feat_fusion,
+            ssa_loss=opt.SSA_loss)
     elif opt.model == 'res3d_clstm_mn':
         model = consensus_module_3dcnn.get_model(
             num_classes=opt.n_classes,

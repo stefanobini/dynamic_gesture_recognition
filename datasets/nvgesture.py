@@ -105,28 +105,14 @@ def load_annotation_data(data_file_path):
 
 
 def get_class_labels(data):
-    class_labels_map = {}
+    class_labels_map = dict()
     index = 0
     for class_label in data['labels']:
         class_labels_map[class_label] = index
         index += 1
     return class_labels_map
 
-def get_video_names_and_annotations(data, subset):
-    video_names = []
-    annotations = []
 
-    for key, value in data['database'].items():
-        this_subset = value['subset']
-        if this_subset == subset:
-            label = value['annotations']['label']
-            # video_names.append('{}/{}'.format(label, key))
-            video_names.append(key)
-            annotations.append(value['annotations'])
-
-    return video_names, annotations
-
-'''
 def get_video_names_and_annotations(data, subset):
     video_names = []
     annotations = []
@@ -142,7 +128,7 @@ def get_video_names_and_annotations(data, subset):
             frames.append({'begin': value['start'], 'end': value['end']})
 
     return video_names, annotations, frames
-'''
+
 '''
 def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
                  sample_duration):
@@ -156,7 +142,6 @@ def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
     dataset = []
     data_iter = tqdm(range(len(video_names)), '{} set loading'.format(subset), total=len(video_names))
     for i in data_iter:
-
         video_path = os.path.join(root_path, video_names[i])
         if not os.path.exists(video_path):
             print(video_path)
@@ -198,20 +183,15 @@ def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
 
 def make_dataset(root_path, annotation_path, modalities, subset, n_samples_for_each_video, sample_duration):
     data = load_annotation_data(annotation_path)
-    video_names, annotations = get_video_names_and_annotations(data, subset)
+    video_names, annotations, frames = get_video_names_and_annotations(data, subset)
     class_to_idx = get_class_labels(data)
     idx_to_class = {}
     for name, label in class_to_idx.items():
         idx_to_class[label] = name
     
-    datasets = dict()
-    dataset = []
+    dataset = list()
     data_iter = tqdm(range(len(video_names)), '{} set loading'.format(subset), total=len(video_names))
     for i in data_iter:
-        '''
-        if i % 1000 == 0:
-            print('dataset loading [{}/{}]'.format(i, len(video_names)))
-        '''
         mod_folder = ''
         video_paths = dict()
         video_path = ''
@@ -229,21 +209,10 @@ def make_dataset(root_path, annotation_path, modalities, subset, n_samples_for_e
                 print(video_path)
                 continue
             video_paths[modality] = video_path
-        '''
-        video_path = os.path.join(root_path, video_names[i])
-        if not os.path.exists(video_path):
-            print(video_path)
-            continue
-        '''
-        
-        # work if the different modalities are sinchronized on the frame, also a list of indices have to be built
-        n_frames_file_path = os.path.join(video_path, 'n_frames')
-        n_frames = int(load_value_file(n_frames_file_path))
-        if n_frames <= 0:
-            continue
 
-        begin_t = 1
-        end_t = n_frames
+        begin_t = int(frames[i]['begin'])
+        end_t = int(frames[i]['end'])
+        n_frames = end_t - begin_t
         sample = {
             'videos': video_paths,
             'segment': [begin_t, end_t],
@@ -255,26 +224,24 @@ def make_dataset(root_path, annotation_path, modalities, subset, n_samples_for_e
             sample['label'] = class_to_idx[annotations[i]['label']]
         else:
             sample['label'] = -1
-
+        
         if n_samples_for_each_video == 1:
-            sample['frame_indices'] = list(range(1, n_frames + 1))
+            sample['frame_indices'] = list(range(begin_t, end_t))
             dataset.append(sample)
         else:
             if n_samples_for_each_video > 1:
-                step = max(1,
-                           math.ceil((n_frames - 1 - sample_duration) /
-                                     (n_samples_for_each_video - 1)))
+                step = max(1, math.ceil((end_t - 1 - sample_duration) / (n_samples_for_each_video - 1)))
             else:
                 step = sample_duration
-            for j in range(1, n_frames, step):
+            for j in range(begin_t, end_t, step):
                 sample_j = copy.deepcopy(sample)
                 sample_j['frame_indices'] = list(
-                    range(j, min(n_frames + 1, j + sample_duration)))
+                    range(j, min(end_t, j + sample_duration)))
                 dataset.append(sample_j)
 
     
     return dataset, idx_to_class
-
+#'''
 
 class NVGesture(data.Dataset):
     """
@@ -292,7 +259,7 @@ class NVGesture(data.Dataset):
         class_to_idx (dict): Dict with items (class_name, class_index).
         imgs (list): List of (image path, class_index) tuples
     """
-
+    #'''
     def __init__(self,
                  root_path,
                  annotation_path,
@@ -306,9 +273,12 @@ class NVGesture(data.Dataset):
                  get_loader=get_default_video_loader,
                  cnn_dim=3):
         self.data, self.class_names = make_dataset(
-            root_path, annotation_path, modalities, subset, n_samples_for_each_video,
+            root_path,
+            annotation_path,
+            modalities,
+            subset,
+            n_samples_for_each_video,
             sample_duration)
-
         self.modalities = modalities
         self.spatial_transform = spatial_transform
         self.temporal_transform = temporal_transform
@@ -316,7 +286,7 @@ class NVGesture(data.Dataset):
         self.sample_duration = sample_duration
         self.loader = get_loader()
         self.cnn_dim = cnn_dim
-
+    
     def __getitem__(self, index):
         """
         Args:
@@ -332,7 +302,7 @@ class NVGesture(data.Dataset):
         clips_list = list()
         for modality in self.modalities:
             path = self.data[index]['videos'][modality]
-            # print('PATH: {}\tMODALITY: {}\tFRAME INDICES: {}\tSAMPLE DURATION: {}\n'.format(path, modality, frame_indices, self.sample_duration))
+            # print('PATH: {}\tMODALITY: {}\tFRAME INDICES: {}\tSAMPLE DURATION: {}'.format(path, modality, frame_indices, self.sample_duration))
             # clip = self.loader(path, frame_indices)
             clip = self.loader(path, frame_indices, self.sample_duration)
             if self.spatial_transform is not None:
@@ -352,12 +322,14 @@ class NVGesture(data.Dataset):
         target = self.data[index]
         if self.target_transform is not None:
             target = self.target_transform(target)
+        
+        # print('Video: {}\nLabel: {}\n'.format(path, target))
 
         return clips, target
     
     def __len__(self):
         return len(self.data)
-'''
+    '''
     def __init__(self,
                  root_path,
                  annotation_path,
@@ -370,9 +342,7 @@ class NVGesture(data.Dataset):
                  sample_duration=16,
                  get_loader=get_default_video_loader,
                  cnn_dim=3):
-        self.data, self.class_names = make_dataset(
-            root_path, annotation_path, subset, n_samples_for_each_video,
-            sample_duration)
+        self.data, self.class_names = make_dataset(root_path, annotation_path, subset, n_samples_for_each_video, sample_duration)
         self.modality = modality
         self.spatial_transform = spatial_transform
         self.temporal_transform = temporal_transform
@@ -380,7 +350,7 @@ class NVGesture(data.Dataset):
         self.sample_duration = sample_duration
         self.loader = get_loader()
         self.cnn_dim = cnn_dim
-
+    
     def __getitem__(self, index):
         """
         Args:
@@ -413,4 +383,7 @@ class NVGesture(data.Dataset):
         # print('PATH: {}\nLABEL: {}\nFRAME INDICES: {}\nSAMPLE DURATION: {}\n'.format(path, target, frame_indices, self.sample_duration))
         
         return clip, target
-'''
+    
+    def __len__(self):
+        return len(self.data)
+#'''

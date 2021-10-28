@@ -91,7 +91,6 @@ def make_dataset(root_path, annotation_path, modalities, subset, n_samples_for_e
     for name, label in class_to_idx.items():
         idx_to_class[label] = name
     
-    datasets = dict()
     dataset = []
     data_iter = tqdm(range(len(video_names)), '{} set loading'.format(subset), total=len(video_names))
     for i in data_iter:
@@ -193,9 +192,12 @@ class IsoGD(data.Dataset):
                  get_loader=get_default_video_loader,
                  cnn_dim=3):
         self.data, self.class_names = make_dataset(
-            root_path, annotation_path, modalities, subset, n_samples_for_each_video,
+            root_path,
+            annotation_path,
+            modalities,
+            subset,
+            n_samples_for_each_video,
             sample_duration)
-
         self.modalities = modalities
         self.spatial_transform = spatial_transform
         self.temporal_transform = temporal_transform
@@ -239,7 +241,9 @@ class IsoGD(data.Dataset):
         target = self.data[index]
         if self.target_transform is not None:
             target = self.target_transform(target)
-
+        
+        # print('Video: {}\nLabel: {}\n'.format(path, target))
+        
         return clips, target
 
 

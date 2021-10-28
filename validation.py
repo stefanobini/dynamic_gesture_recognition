@@ -32,12 +32,18 @@ def val_epoch(epoch, data_loader, model, criterion, opt, logger):
         with torch.no_grad():
             inputs = Variable(inputs)
             targets = Variable(targets)
+        # outputs, features_outputs = model(inputs)
         outputs, cnns_outputs, features_outputs = model(inputs)
-        # print('Final output: {}\nCnns output: {}\nCNNs features: {}'.format(outputs.size(), cnns_outputs.size(), features_outputs.size()))
+        '''
+        print('************** VALIDATION **************\n')
+        print('Final output: {}\nCnns output: {}\nCNNs features: {}'.format(outputs.size(), cnns_outputs.size(), features_outputs.size() if (features_outputs is not None) else features_outputs))
+        print('****************************************\n')
+        '''
         loss = criterion(outputs, targets)
         prec1, prec5 = calculate_accuracy(outputs.data, targets.data, topk=(1,5))
         for ii in range(len(opt.modalities)):
             mod_prec1 = calculate_accuracy(cnns_outputs.data, targets.data, topk=(1,)) if len(opt.modalities)==1 else calculate_accuracy(cnns_outputs[ii].data, targets.data, topk=(1,))
+            # mod_prec1 = calculate_accuracy(outputs.data, targets.data, topk=(1,)) if len(opt.modalities)==1 else calculate_accuracy(cnns_outputs[ii].data, targets.data, topk=(1,))
             mods_prec1[opt.modalities[ii]].update(mod_prec1[0], inputs.size(0))
         top1.update(prec1, inputs.size(0))
         top5.update(prec5, inputs.size(0))
@@ -46,22 +52,7 @@ def val_epoch(epoch, data_loader, model, criterion, opt, logger):
 
         # batch_time.update(time.time() - end_time)
         # end_time = time.time()
-        '''
-        print('Epoch: [{0}][{1}/{2}]\t'
-              'Time {batch_time.val:.5f} ({batch_time.avg:.5f})\t'
-              'Data {data_time.val:.5f} ({data_time.avg:.5f})\t'
-              'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-              'Prec@1 {top1.val:.5f} ({top1.avg:.5f})\t'
-              'Prec@5 {top5.val:.5f} ({top5.avg:.5f})'.format(
-                  epoch,
-                  i + 1,
-                  len(data_loader),
-                  batch_time=batch_time,
-                  data_time=data_time,
-                  loss=losses,
-                  top1=top1,
-                  top5=top5))
-        '''
+        
         # batch_iter.set_description(f'Validation at epoch {epoch:03d}')  # update progressbar
         # batch_iter.set_description(f'Validation at epoch {epoch:03d}, avgLoss: {losses.avg.item():.4f}, avgPrec@1: {top1.avg.item():.2f}, avgPrec@5: {top5.avg.item():.2f}')  # update progressbar
     batch_iter.close()

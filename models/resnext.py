@@ -5,6 +5,8 @@ from torch.autograd import Variable
 import math
 from functools import partial
 
+# from torchvision.utils import save_image
+
 __all__ = ['ResNeXt', 'resnet50', 'resnet101']
 
 
@@ -90,11 +92,14 @@ class ResNeXt(nn.Module):
                  shortcut_type='B',
                  cardinality=32,
                  num_classes=400,
-                 feat_fusion=False):
+                 feat_fusion=False,
+                 ssa_loss=False):
         
         self.feat_fusion = feat_fusion
+        self.ssa_loss = ssa_loss
         self.inplanes = 64
         super(ResNeXt, self).__init__()
+        # self.bn0 = nn.BatchNorm3d(3)    # it is a test
         self.conv1 = nn.Conv3d(
             3,
             64,
@@ -134,6 +139,9 @@ class ResNeXt(nn.Module):
             elif isinstance(m, nn.BatchNorm3d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+                
+        
+        # self.index = 0
 
     def _make_layer(self,
                     block,
@@ -169,6 +177,15 @@ class ResNeXt(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        # print('ResNeXt input shape: {}'.format(x.size()))
+        '''
+        self.index += 1
+        for frame in range(x.size(2)):
+            image = x[:, :, frame, :, :]
+            # image = image.div(255)    # to visualize with real colors
+            save_image(image, '{:02d}_{:02d}.png'.format(self.index, frame))
+        #'''
+        # x = self.bn0(x)
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -180,13 +197,16 @@ class ResNeXt(nn.Module):
         x = self.layer4(x)
 
         x = self.avgpool(x)
-        
+        #'''
         # For SSA loss
-        feat_map = x
-        variance, sample_mean = torch.var_mean(feat_map)
-        sub_map = torch.sub(feat_map, sample_mean)
-        correlation_matrix = torch.div(sub_map, variance)
-
+        correlation_matrix = None
+        
+        if self.ssa_loss:
+            feat_map = x
+            variance, sample_mean = torch.var_mean(feat_map)
+            sub_map = torch.sub(feat_map, sample_mean)
+            correlation_matrix = torch.div(sub_map, variance)
+        
         x = x.view(x.size(0), -1)
         
         if not self.feat_fusion:

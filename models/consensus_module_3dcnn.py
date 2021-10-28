@@ -69,6 +69,7 @@ class ConsensusModule3DCNN(nn.Module):
         # print('ConsensusModule3DCNN input shape: {}'.format(x.size()))  # (16, 1, 3, 16, 112, 112)
         cnns_outputs = list()
         cnns_features = list()
+        # x = x.div(255)
         if self.aggr_type == 'MLP':
             # iterate on the modalities
             for i in range(x.size(1)):

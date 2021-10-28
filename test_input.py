@@ -1,6 +1,6 @@
 ''' Bash command
-python3 test_input.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd/RGB-D_frames --annotation_path annotation_ChaLearn_IsoGD/test_dataloader.json --result_path results/chalearn_isogd --dataset isogd --n_classes 249 --n_finetune_classes 249 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 60 --lr_steps 30 45 --learning_rate 0.01 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modality RGB --aggr_type avg
-
+python3 test_input.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_reduced.json --result_path results/chalearn_isogd --dataset isogd --n_classes 249 --n_finetune_classes 249 --ft_portion complete --cnn_dim 3 --model resnext --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 60 --lr_steps 30 45 --learning_rate 0.01 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none --gpu 3
+python3 test_input.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/nvgesture --annotation_path annotation_NVGesture/test_dataloader.json --result_path results/nvgesture --dataset nvgesture --n_classes 25 --n_finetune_classes 25 --ft_portion complete --cnn_dim 3 --model resnext --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 60 --lr_steps 30 45 --learning_rate 0.01 --sample_duration 16 --downsample 2 --batch_size 8 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --aggr_type none --gpu 3
 '''
 import numpy as np
 import torch
@@ -25,6 +25,7 @@ import PIL
 
 
 opt = parse_opts()
+os.environ['CUDA_VISIBLE_DEVICES']=opt.gpu
 if opt.root_path != '':
     opt.video_path = os.path.join(opt.root_path, opt.video_path)
     opt.annotation_path = os.path.join(opt.root_path, opt.annotation_path)
@@ -41,15 +42,14 @@ for i in range(1, opt.n_scales):
 opt.arch = '{}'.format(opt.model)
 opt.mean = get_mean(opt.norm_value, dataset=opt.mean_dataset)
 opt.std = get_std(opt.norm_value)
-opt.store_name = '_'.join([opt.dataset, opt.model, str(opt.width_mult) + 'x',
-                           opt.modality, str(opt.sample_duration)])
+opt.store_name = '_'.join([opt.dataset, opt.model, '_'.join([modality for modality in opt.modalities]), opt.aggr_type])
 print(opt)
-with open(os.path.join(opt.result_path, 'opts.json'), 'w') as opt_file:
+with open(os.path.join(opt.result_path, 'opts_{}_{}_{}.json'.format(opt.dataset, opt.model, '_'.join([modality for modality in opt.modalities]), opt.aggr_type)), 'w') as opt_file:
     json.dump(vars(opt), opt_file)
 
 torch.manual_seed(opt.manual_seed)
 
-if opt.no_mean_norm and not opt.std_norm or opt.modality != 'RGB':
+if opt.no_mean_norm and not opt.std_norm or opt.modalities != 'RGB':
     norm_method = Normalize([0, 0, 0], [1, 1, 1])
 elif not opt.std_norm:
     norm_method = Normalize(opt.mean, [1, 1, 1])
@@ -85,8 +85,7 @@ if not opt.no_train:
     ])
     temporal_transform = TemporalRandomCrop(opt.sample_duration, opt.downsample)
     target_transform = ClassLabel()
-    training_data = get_training_set(opt, spatial_transform,
-                                     temporal_transform, target_transform)
+    training_data = get_training_set(opt, spatial_transform, temporal_transform, target_transform)
     train_loader = torch.utils.data.DataLoader(
         training_data,
         batch_size=opt.batch_size,
@@ -96,10 +95,10 @@ if not opt.no_train:
     for i, (inputs, targets) in enumerate(train_loader):
         # inputs = Variable(inputs)
         # targets = Variable(targets)
-        # print('*********** Inputs ***********\n{}\n*****************************'. format(inputs.shape))
-        n_frames = inputs.shape[1] if opt.cnn_dim == 2 else inputs.shape[2]
+        print('*********** Inputs ***********\n{}\n*****************************'. format(inputs.size()))
+        n_frames = inputs.shape[2] if opt.cnn_dim == 2 else inputs.shape[3]
         for frame in range(n_frames):
-            image = inputs[:, frame, :, :, :] if opt.cnn_dim == 2 else inputs[:, :, frame, :, :]
+            image = inputs[:, 0, frame, :, :, :] if opt.cnn_dim == 2 else inputs[:, 0, :, frame, :, :]
             image = image.mul(opt.norm_value)
             image = image.div(255)
             # print('*********** Image ***********\n{}\n*****************************'. format(image.size()))
@@ -121,19 +120,19 @@ if not opt.no_val:
         opt, spatial_transform, temporal_transform, target_transform)
     val_loader = torch.utils.data.DataLoader(
         validation_data,
-        batch_size=1,
+        batch_size=opt.batch_size,
         shuffle=False,
         num_workers=opt.n_threads,
         pin_memory=True)
     for i, (inputs, targets) in enumerate(val_loader):
         # inputs = Variable(inputs)
         # targets = Variable(targets)
-        # print('*********** Inputs ***********\n{}\n*****************************'. format(inputs.shape))
+        print('*********** Inputs ***********\n{}\n*****************************'. format(inputs.size()))
         for frame in range(inputs.shape[2]):
-            image = inputs[:, :, frame, :, :]
+            image = inputs[:, 0, :, frame, :, :]
             image = image.mul(opt.norm_value)
             image = image.div(255)
-            # print('*********** Image ***********\n{}\n*****************************'. format(image))
+            # print('*********** Image ***********\n{}\n*****************************'. format(image.size()))
             path = '{}/image{:05d}_{}.jpg'.format(opt.result_path, frame, subset)
             print('Path: ' + path )
             save_image(image, path)
@@ -167,7 +166,7 @@ if opt.test:
         # targets = Variable(targets)
         # print('*********** Inputs ***********\n{}\n*****************************'. format(inputs.shape))
         for frame in range(inputs.shape[2]):
-            image = inputs[:, :, frame, :, :]
+            image = inputs[:, 0, :, frame, :, :]
             image = image.mul(opt.norm_value)
             image = image.div(255)
             # print('*********** Image ***********\n{}\n*****************************'. format(image))

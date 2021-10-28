@@ -6,11 +6,12 @@ import sys
 from tqdm import tqdm
 import math
 
+from torchvision.utils import save_image
+
 from utils import *
 
 
-def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
-                epoch_logger, batch_logger):
+def train_epoch(epoch, data_loader, model, criterion, optimizer, opt, epoch_logger, batch_logger):
     # print('train at epoch {}'.format(epoch))
 
     model.train()
@@ -29,10 +30,26 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
         if opt.gpu is not None:
             targets = targets.cuda()
         # print('########### Input ###########\nType: {}\nTensor size: {}\n\n#############################'.format(type(inputs), inputs.size()))
+        '''
+        for frame in range(inputs.size(3)):
+            image = inputs[:, 0, :, frame, :, :]
+            # image = image.div(255)    # to visualize with real colors
+            save_image(image, '{:02d}_{:02d}.png'.format(i, frame))
+        with open('{:02d}.txt'.format(i), 'w') as f:
+            for target in targets:
+                f.write(str(target)+"\n")
+        '''
         inputs = Variable(inputs)
         targets = Variable(targets)
         # outputs = model(inputs)
         outputs, cnns_outputs, features_outputs = model(inputs)
+        # outputs, features_outputs = model(inputs)
+        
+        '''
+        print('*************** TRAINING ***************')
+        print('Final output: {}\nCnns output: {}\nCNNs features: {}'.format(outputs.size(), cnns_outputs.size(), features_outputs.size() if (features_outputs is not None) else features_outputs))
+        print('****************************************\n')
+        #'''
         '''
         print('***********target shape in train: ', targets.size())
         print('********input shape in train: ', inputs.size())
@@ -62,24 +79,6 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
             'lr': optimizer.param_groups[0]['lr']
         })
         
-        '''
-        if i % 10 ==0:
-            print('Epoch: [{0}][{1}/{2}]\t lr: {lr:.5f}\t'
-                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Prec@1 {top1.val:.5f} ({top1.avg:.5f})\t'
-                  'Prec@5 {top5.val:.5f} ({top5.avg:.5f})'.format(
-                      epoch,
-                      i,
-                      len(data_loader),
-                      batch_time=batch_time,
-                      data_time=data_time,
-                      loss=losses,
-                      top1=top1,
-                      top5=top5,
-                      lr=optimizer.param_groups[0]['lr']))
-        '''
         # batch_iter.set_description(f'Train at epoch {epoch:03d}')  # update progressbar
         # batch_iter.set_description(f'Train at epoch {epoch:03d}, avgLoss: {losses.avg.item():.4f}, avgPrec@1: {top1.avg.item():.2f}, avgPrec@5: {top5.avg.item():.2f}')  # update progressbar
     batch_iter.close()

@@ -78,7 +78,7 @@ if __name__ == '__main__':
         criterion = criterion.cuda()
 
     # if opt.no_mean_norm and not opt.std_norm or opt.modality != 'RGB':
-    if opt.no_mean_norm and not opt.std_norm:
+    if not opt.mean_norm and not opt.std_norm:
         norm_method = Normalize([0, 0, 0], [1, 1, 1])
     elif not opt.std_norm:
         norm_method = Normalize(opt.mean, [1, 1, 1])
@@ -134,6 +134,7 @@ if __name__ == '__main__':
         optimizers = list()
         schedulers = list()
         optimizer = None
+        scheduler = None
         
         for i in range(len(opt.modalities)):
             if opt.SSA_loss:
@@ -150,7 +151,6 @@ if __name__ == '__main__':
             optimizers.append(optimizer)
             
             if opt.lr_linear_decay:
-                #the error can be done here
                 lr_step = (opt.learning_rate - opt.lr_linear_decay) / opt.n_epochs
                 lr_func = lambda epoch: (opt.learning_rate - lr_step * epoch) / opt.learning_rate
                 scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_func, verbose=True)     # linear decreasing of the learning rate
@@ -200,22 +200,31 @@ if __name__ == '__main__':
     for i in range(opt.begin_epoch, opt.n_epochs + 1):
         # print('Epoch: {}\tComputed learning rate: {}\tScheduler learning rate: {}'.format(i, opt.learning_rate*lr_func(i), schedulers[0].get_last_lr()))
         if not opt.no_train:
+            state = dict()
             # adjust_learning_rate(optimizer, i, opt)
             if opt.SSA_loss:
                 train_epoch_custom_loss(i, train_loader, model, criterion, optimizers, opt, train_logger, train_batch_logger)
+                state = {
+                    'epoch': i,
+                    'arch': opt.arch,
+                    'state_dict': model.state_dict(),
+                    'optimizers': [optimizer.state_dict() for optimizer in optimizers],
+                    'best_prec1': best_prec1
+                    }
             else:
                 train_epoch(i, train_loader, model, criterion, optimizers[0], opt, train_logger, train_batch_logger)
-            state = {
-                'epoch': i,
-                'arch': opt.arch,
-                'state_dict': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'best_prec1': best_prec1
-                }
+                state = {
+                    'epoch': i,
+                    'arch': opt.arch,
+                    'state_dict': model.state_dict(),
+                    'optimizer': optimizers[0].state_dict(),
+                    'best_prec1': best_prec1
+                    }
             save_checkpoint(state, False, opt)
             
         if not opt.no_val:
             validation_loss, prec1, mods_prec1 = val_epoch(i, val_loader, model, criterion, opt, val_logger)
+            
             if opt.SSA_loss:
                 for i in range(len(opt.modalities)):
                     if opt.lr_steps is None and opt.lr_linear_decay is None:
@@ -229,22 +238,32 @@ if __name__ == '__main__':
                     schedulers[0].step()
             is_best = prec1 > best_prec1
             best_prec1 = max(prec1, best_prec1)
-            state = {
+            
+            # Save the singol network
+            if opt.SSA_loss:
+                state = {
                 'epoch': i,
                 'arch': opt.arch,
                 'state_dict': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
+                # 'optimizer': optimizer.state_dict(),
+                'optimizers': [optimizer.state_dict() for optimizer in optimizers],
                 'best_prec1': best_prec1
                 }
-            save_checkpoint(state, is_best, opt)
-            # Save the singol network
-            if opt.SSA_loss:
                 for modality in range(len(opt.modalities)):
                     if mods_best_prec1[modality] > mods_prec1[modality]:
                         mods_best_prec1[modality] = mods_prec1[modality]
                         for ii in range(len(opt.modalities)):
                             torch.save(model.module.cnns[ii].state_dict(), '{}/{}_{}_{}_SSA_loss.pth'.format(opt.result_path, opt.dataset, opt.model, opt.modalities[ii]))
-
+            else:
+                state = {
+                'epoch': i,
+                'arch': opt.arch,
+                'state_dict': model.state_dict(),
+                'optimizer': optimizers[0].state_dict(),
+                'best_prec1': best_prec1
+                }                
+            save_checkpoint(state, is_best, opt)
+            
     if opt.test:
         spatial_transform = Compose([
             # Scale_original(opt.sample_size),

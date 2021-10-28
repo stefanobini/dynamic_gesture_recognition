@@ -191,7 +191,12 @@ class Jester(data.Dataset):
                  sample_duration=16,
                  get_loader=get_default_video_loader,
                  cnn_dim=3):
-        self.data, self.class_names = make_dataset(root_path, annotation_path, modalities, subset, n_samples_for_each_video, sample_duration)
+        self.data, self.class_names = make_dataset(root_path,
+        annotation_path,
+        modalities,
+        subset,
+        n_samples_for_each_video,
+        sample_duration)
         
         self.modalities = modalities
         self.spatial_transform = spatial_transform
@@ -238,6 +243,7 @@ class Jester(data.Dataset):
             target = self.target_transform(target)
             
         return clips, target
+
 
     def __len__(self):
         return len(self.data)
