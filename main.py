@@ -30,7 +30,7 @@ if __name__ == '__main__':
     if opt.root_path != '':
         opt.video_path = os.path.join(opt.root_path, opt.video_path)
         opt.annotation_path = os.path.join(opt.root_path, opt.annotation_path)
-        opt.result_path = os.path.join(opt.root_path, opt.result_path)
+        opt.result_path = os.path.join(opt.root_path, opt.result_path, opt.model)
         if not os.path.exists(opt.result_path):
             os.makedirs(opt.result_path)
         if opt.resume_path:
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     if not opt.no_cuda:
         criterion = criterion.cuda()
 
-    if not opt.mean_norm and not opt.std_norm or 'RGB' not in opt.modalities:
+    if not opt.mean_norm and not opt.std_norm:
         norm_method = Normalize([0, 0, 0], [1, 1, 1])
     elif not opt.std_norm:
         norm_method = Normalize(opt.mean, [1, 1, 1])
@@ -107,8 +107,7 @@ if __name__ == '__main__':
         ])
         temporal_transform = TemporalRandomCrop(opt.sample_duration, opt.downsample)
         target_transform = ClassLabel()
-        training_data = get_training_set(opt, spatial_transform,
-                                         temporal_transform, target_transform)
+        training_data = get_training_set(opt, spatial_transform, temporal_transform, target_transform)
         train_loader = torch.utils.data.DataLoader(
             training_data,
             batch_size=opt.batch_size,
@@ -126,17 +125,35 @@ if __name__ == '__main__':
             dampening = 0
         else:
             dampening = opt.dampening
-        optimizer = optim.SGD(
-            parameters,
-            lr=opt.learning_rate,
-            momentum=opt.momentum,
-            dampening=dampening,
-            weight_decay=opt.weight_decay,
-            nesterov=opt.nesterov)
-        if opt.lr_steps is None:
-            scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=opt.lr_patience)
-        else:
-            scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=opt.lr_steps, gamma=0.1)
+        
+        optimizers = list()
+        schedulers = list()
+        optimizer = None
+        scheduler = None
+        
+        for i in range(len(opt.modalities)):
+            if opt.SSA_loss:
+                params = model.module.cnns[i].parameters()
+            else:
+                params = model.parameters()
+            optimizer = optim.SGD(
+                params=params,
+                lr=opt.learning_rate,
+                momentum=opt.momentum,
+                dampening=dampening,
+                weight_decay=opt.weight_decay,
+                nesterov=opt.nesterov)
+            optimizers.append(optimizer)
+            
+            if opt.lr_linear_decay:
+                lr_step = (opt.learning_rate - opt.lr_linear_decay) / opt.n_epochs
+                lr_func = lambda epoch: (opt.learning_rate - lr_step * epoch) / opt.learning_rate
+                scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_func, verbose=True)     # linear decreasing of the learning rate
+            elif opt.lr_steps is None:
+                scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=opt.lr_patience)
+            else:
+                scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=opt.lr_steps, gamma=0.1)
+            schedulers.append(scheduler)
         
     if not opt.no_val:
         spatial_transform = Compose([
@@ -178,13 +195,12 @@ if __name__ == '__main__':
 
         if not opt.no_train:
             # adjust_learning_rate(optimizer, i, opt)
-            train_epoch(i, train_loader, model, criterion, optimizer, opt,
-                        train_logger, train_batch_logger)
+            train_epoch(i, train_loader, model, criterion, optimizers[0], opt, train_logger, train_batch_logger)
             state = {
                 'epoch': i,
                 'arch': opt.arch,
                 'state_dict': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
+                'optimizer': optimizers[0].state_dict(),
                 'best_prec1': best_prec1
                 }
             save_checkpoint(state, False, opt)
@@ -193,16 +209,16 @@ if __name__ == '__main__':
             validation_loss, prec1 = val_epoch(i, val_loader, model, criterion, opt,
                                         val_logger)
             if opt.lr_steps is None:
-                scheduler.step(prec1)   # check if the prec1 is increased
+                schedulers[0].step(prec1)   # check if the prec1 is increased
             else:
-                scheduler.step()
+                schedulers[0].step()
             is_best = prec1 > best_prec1
             best_prec1 = max(prec1, best_prec1)
             state = {
                 'epoch': i,
                 'arch': opt.arch,
                 'state_dict': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
+                'optimizer': optimizers[0].state_dict(),
                 'best_prec1': best_prec1
                 }
             save_checkpoint(state, is_best, opt)        
