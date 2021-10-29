@@ -164,6 +164,8 @@ class ResNeXt(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        # print('ResNeXt shape: ', x.size())
+        x = x[:, 0, :, :, :, :]
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
