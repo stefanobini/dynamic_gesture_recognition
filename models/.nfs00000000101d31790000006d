@@ -5,8 +5,6 @@ from torch.autograd import Variable
 import math
 from functools import partial
 
-# from torchvision.utils import save_image
-
 __all__ = ['ResNeXt', 'resnet50', 'resnet101']
 
 
@@ -77,7 +75,7 @@ class ResNeXtBottleneck(nn.Module):
 
         out += residual
         out = self.relu(out)
-        
+
         return out
 
 
@@ -88,15 +86,9 @@ class ResNeXt(nn.Module):
                  layers,
                  sample_size,
                  sample_duration,
-                 out_module_size=128,
                  shortcut_type='B',
                  cardinality=32,
-                 num_classes=400,
-                 feat_fusion=False,
-                 ssa_loss=False):
-        
-        self.feat_fusion = feat_fusion
-        self.ssa_loss = ssa_loss
+                 num_classes=400):
         self.inplanes = 64
         super(ResNeXt, self).__init__()
         self.conv1 = nn.Conv3d(
@@ -116,20 +108,20 @@ class ResNeXt(nn.Module):
         self.bn1 = nn.BatchNorm3d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool3d(kernel_size=(3, 3, 3), stride=2, padding=1)
-        self.layer1 = self._make_layer(block, out_module_size, layers[0], shortcut_type,
+        self.layer1 = self._make_layer(block, 128, layers[0], shortcut_type,
                                        cardinality)
         self.layer2 = self._make_layer(
-            block, out_module_size*2, layers[1], shortcut_type, cardinality, stride=2)
+            block, 256, layers[1], shortcut_type, cardinality, stride=2)
         self.layer3 = self._make_layer(
-            block, out_module_size*4, layers[2], shortcut_type, cardinality, stride=2)
+            block, 512, layers[2], shortcut_type, cardinality, stride=2)
         self.layer4 = self._make_layer(
-            block, out_module_size*8, layers[3], shortcut_type, cardinality, stride=2)
+            block, 1024, layers[3], shortcut_type, cardinality, stride=2)
         last_duration = int(math.ceil(sample_duration / 16))
         #last_duration = 1
         last_size = int(math.ceil(sample_size / 32))
         self.avgpool = nn.AvgPool3d(
             (last_duration, last_size, last_size), stride=1)
-        
+            
         self.classifier = nn.Linear(cardinality * 32 * block.expansion, num_classes)
         
         for m in self.modules():
@@ -138,8 +130,6 @@ class ResNeXt(nn.Module):
             elif isinstance(m, nn.BatchNorm3d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
-                
-        # self.index = 0
 
     def _make_layer(self,
                     block,
@@ -162,8 +152,7 @@ class ResNeXt(nn.Module):
                         planes * block.expansion,
                         kernel_size=1,
                         stride=stride,
-                        bias=False), 
-                    nn.BatchNorm3d(planes * block.expansion))
+                        bias=False), nn.BatchNorm3d(planes * block.expansion))
 
         layers = []
         layers.append(
@@ -175,14 +164,8 @@ class ResNeXt(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        # print('ResNeXt input shape: {}'.format(x.size()))
-        '''
-        self.index += 1
-        for frame in range(x.size(2)):
-            image = x[:, :, frame, :, :]
-            # image = image.div(255)    # to visualize with real colors
-            save_image(image, '{:02d}_{:02d}.png'.format(self.index, frame))
-        #'''
+        # print('ResNeXt shape: ', x.size())
+        x = x[:, 0, :, :, :, :]
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -194,21 +177,12 @@ class ResNeXt(nn.Module):
         x = self.layer4(x)
 
         x = self.avgpool(x)
-        
-        # For SSA loss
-        correlation_matrix = None
-        if self.ssa_loss:
-            feat_map = x
-            variance, sample_mean = torch.var_mean(feat_map)
-            sub_map = torch.sub(feat_map, sample_mean)
-            correlation_matrix = torch.div(sub_map, variance)
-        
+
         x = x.view(x.size(0), -1)
         
-        if not self.feat_fusion:
-            x = self.classifier(x)
+        x = self.classifier(x)
         
-        return x, correlation_matrix
+        return x
 
 
 def get_fine_tuning_parameters(model, ft_portion):

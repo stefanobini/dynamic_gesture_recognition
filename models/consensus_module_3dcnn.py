@@ -44,27 +44,8 @@ class ConsensusModule3DCNN(nn.Module):
                 nn.ReLU(),
                 nn.Linear(self.feat_dim * len(self.modalities), self.num_classes)
             )
-    '''
-    def forward(self, x: Tensor) -> Tensor:
-        #print('ConsensusModule3DCNN input shape: {}'.format(x.size()))  # (16, 1, 3, 16, 112, 112)
-        if self.aggr_type == 'MLP':
-            # iterate on the modalities
-            x = torch.cat([self.cnns[i](x[:, i, :, :, :])[0] for i in range(x.size(1))], dim=1)
-            x = self.aggregator(x)
-        elif self.aggr_type == 'avg':
-            # x = torch.stack([self.cnns[i](x[:, i, :, :, :])[0] for i in range(x.size()[1])]) # maybe i have to add dim=1 to average on frames, now i iterate on the batch, maybe.
-            x = torch.stack([self.cnns[i](x[:, i, :, :, :])[0] for i in range(x.size()[1])], dim=1)
-            x = x.mean(dim=1)
-        elif self.aggr_type == 'max':
-            # x = torch.stack([self.cnns[i](x[:, i, :, :, :])[0] for i in range(x.size()[1])]) # maybe i have to add dim=1 to average on frames, now i iterate on the batch, maybe.
-            x = torch.stack([self.cnns[i](x[:, i, :, :, :])[0] for i in range(x.size()[1])], dim=1)
-            x = x.max(dim=1)
-        elif self.aggr_type == 'none':  # the case in which use a single modality
-            x, _ = self.cnns[0](x[:, 0, :, :, :])
-        else:
-            x = None
-        return x
-    '''
+    
+    
     def forward(self, x: Tensor) -> Tensor:
         # print('ConsensusModule3DCNN input shape: {}'.format(x.size()))  # (16, 1, 3, 16, 112, 112)
         cnns_outputs = list()
@@ -126,37 +107,6 @@ def get_fine_tuning_parameters(model, ft_portion):
         
     else:
         raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
-    '''
-    elif ft_portion == "last_layer":
-        ft_module_names = []
-        ft_module_names.append('classifier')
-        ft_module_names.append('aggregator')
-        
-        count_1 = 0
-        count_2 = 0
-        parameters = []
-        for k, v in model.named_parameters():
-            # count_1 += 1
-            for ft_module in ft_module_names:
-                if ft_module in k:
-                    count_1 += 1
-                    # print('######### BEFORE BREAK! #########')
-                    # parameters.append({'params': v})
-                    parameters.append({'params': v, 'requires_grad': True})
-                    # print('* Learning rate: {} *'.format(parameters[-1].keys()))
-                    break
-            else:
-                count_2 += 1
-                # print('######### IN ELSE! #########')
-                # parameters.append({'params': v, 'lr': 0.0})
-                parameters.append({'params': v, 'requires_grad': False})
-                # print('* Learning rate: {} *'.format(parameters[-1].keys()))
-        print('*****\nCount_1: {}\nCount_2 : {}\n*****'.format(count_1, count_2))
-        return parameters
-        
-    else:
-        raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
-    '''
 
 
 def get_model(net='resnext', *args, **kwargs):
