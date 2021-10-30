@@ -10,7 +10,7 @@ from pytorch_model_summary import summary
 import copy
 
 from opts import parse_opts
-from model import generate_model, generate_model_2d, generate_model_3d
+from model import generate_model_2d, generate_model_3d
 from mean import get_mean, get_std
 from spatial_transforms import *
 from temporal_transforms import *
@@ -29,9 +29,9 @@ if __name__ == '__main__':
     opt = parse_opts()
     os.environ['CUDA_VISIBLE_DEVICES']=opt.gpu
     if opt.root_path != '':
-        opt.video_path = os.path.join(opt.root_path, opt.video_path)
+        opt.video_path = os.path.join(opt.root_path, opt.video_path, opt.dataset)
         opt.annotation_path = os.path.join(opt.root_path, opt.annotation_path)
-        opt.result_path = os.path.join(opt.root_path, opt.result_path)
+        opt.result_path = os.path.join(opt.root_path, opt.result_path, opt.dataset, opt.model)
         if not os.path.exists(opt.result_path):
             os.makedirs(opt.result_path)
         if opt.resume_path:
@@ -53,7 +53,6 @@ if __name__ == '__main__':
     
     input_shape = (opt.batch_size, 3, opt.sample_duration, opt.sample_size, opt.sample_size)
     if opt.cnn_dim == 3:
-        # model, parameters = generate_model(opt)
         model, parameters = generate_model_3d(opt)
     else:
         model, parameters = generate_model_2d(opt)
@@ -111,19 +110,13 @@ if __name__ == '__main__':
         ])
         temporal_transform = TemporalRandomCrop(opt.sample_duration, opt.downsample)
         target_transform = ClassLabel()
-        training_data = get_training_set(opt, spatial_transform,
-                                         temporal_transform, target_transform)
-        train_loader = torch.utils.data.DataLoader(
-            training_data,
-            batch_size=opt.batch_size,
-            shuffle=True,
-            num_workers=opt.n_threads,
-            pin_memory=True)
+        training_data = get_training_set(opt, spatial_transform, temporal_transform, target_transform)
+        train_loader = torch.utils.data.DataLoader(training_data, batch_size=opt.batch_size, shuffle=True, num_workers=opt.n_threads, pin_memory=True)
         train_logger = Logger(
-            os.path.join(opt.result_path, 'train{}.log'.format(''.join(['_'+modality for modality in opt.modalities]))),
+            os.path.join(opt.result_path, 'train{}_{}.log'.format(''.join(['_'+modality for modality in opt.modalities]), opt.aggr_type)),
             ['epoch', 'loss', 'prec1', 'prec5', 'lr'])
         train_batch_logger = Logger(
-            os.path.join(opt.result_path, 'train_batch{}.log'.format(''.join(['_'+modality for modality in opt.modalities]))),
+            os.path.join(opt.result_path, 'train_batch{}_{}.log'.format(''.join(['_'+modality for modality in opt.modalities]), opt.aggr_type)),
             ['epoch', 'batch', 'iter', 'loss', 'prec1', 'prec5', 'lr'])
 
         if opt.nesterov:
@@ -170,19 +163,12 @@ if __name__ == '__main__':
         #temporal_transform = LoopPadding(opt.sample_duration)
         temporal_transform = TemporalCenterCrop(opt.sample_duration, opt.downsample)
         target_transform = ClassLabel()
-        validation_data = get_validation_set(
-            opt, spatial_transform, temporal_transform, target_transform)
-        val_loader = torch.utils.data.DataLoader(
-            validation_data,
-            # batch_size=16,
-            batch_size=opt.batch_size,
-            shuffle=False,
-            num_workers=opt.n_threads,
-            pin_memory=True)
+        validation_data = get_validation_set(opt, spatial_transform, temporal_transform, target_transform)
+        val_loader = torch.utils.data.DataLoader(validation_data, batch_size=opt.batch_size, shuffle=False, num_workers=opt.n_threads, pin_memory=True)
         val_log_info = ['epoch', 'loss', 'prec1', 'prec5']
         for modality in opt.modalities:
             val_log_info.append(modality+'_prec1')
-        val_logger = Logger(os.path.join(opt.result_path, 'val{}.log'.format(''.join(['_'+modality for modality in opt.modalities]))), val_log_info)
+        val_logger = Logger(os.path.join(opt.result_path, 'val{}_{}.log'.format(''.join(['_'+modality for modality in opt.modalities]), opt.aggr_type)), val_log_info)
 
     best_prec1 = 0
     mods_best_prec1 = list([0. for modality in opt.modalities])
@@ -245,7 +231,6 @@ if __name__ == '__main__':
                 'epoch': i,
                 'arch': opt.arch,
                 'state_dict': model.state_dict(),
-                # 'optimizer': optimizer.state_dict(),
                 'optimizers': [optimizer.state_dict() for optimizer in optimizers],
                 'best_prec1': best_prec1
                 }
@@ -278,11 +263,9 @@ if __name__ == '__main__':
         temporal_transform = TemporalCenterCrop(opt.sample_duration, opt.downsample)
         target_transform = VideoID()
 
-        test_data = get_test_set(opt, spatial_transform, temporal_transform,
-                                 target_transform)
+        test_data = get_test_set(opt, spatial_transform, temporal_transform, target_transform)
         test_loader = torch.utils.data.DataLoader(
             test_data,
-            # batch_size=16,
             batch_size=opt.batch_size,
             shuffle=False,
             num_workers=opt.n_threads,

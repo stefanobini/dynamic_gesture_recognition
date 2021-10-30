@@ -68,8 +68,16 @@ class InvertedResidual(nn.Module):
 
 
 class MobileNetV2(nn.Module):
-    def __init__(self, num_classes=1000, sample_size=224, width_mult=1.):
+    def __init__(self, num_classes=1000,
+                sample_size=224,
+                width_mult=1.,
+                sample_duration=16,
+                feat_fusion=False,
+                ssa_loss=False):
+                
         super(MobileNetV2, self).__init__()
+        self.feat_fusion = feat_fusion
+        self.ssa_loss = ssa_loss
         block = InvertedResidual
         input_channel = 32
         last_channel = 1280
@@ -112,9 +120,21 @@ class MobileNetV2(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = F.avg_pool3d(x, x.data.size()[-3:])
+        
+        # For SSA loss
+        correlation_matrix = None
+        if self.ssa_loss:
+            feat_map = x
+            variance, sample_mean = torch.var_mean(feat_map)
+            sub_map = torch.sub(feat_map, sample_mean)
+            correlation_matrix = torch.div(sub_map, variance)
+        
         x = x.view(x.size(0), -1)
-        x = self.classifier(x)
-        return x
+        
+        if not self.feat_fusion:
+            x = self.classifier(x)
+            
+        return x, correlation_matrix
 
     def _initialize_weights(self):
         for m in self.modules():
