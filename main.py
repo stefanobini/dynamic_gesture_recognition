@@ -28,6 +28,10 @@ from torchinfo import summary
 if __name__ == '__main__':
     opt = parse_opts()
     os.environ['CUDA_VISIBLE_DEVICES']=opt.gpu
+    if opt.cnn_dim == 3:
+        aggrs = opt.mod_aggr
+    elif opt.cnn_dim == 2:
+        aggrs = opt.temp_aggr + '_' + opt.mod_aggr
     if opt.root_path != '':
         opt.video_path = os.path.join(opt.root_path, opt.video_path, opt.dataset)
         opt.annotation_path = os.path.join(opt.root_path, opt.annotation_path)
@@ -44,9 +48,9 @@ if __name__ == '__main__':
     opt.arch = '{}'.format(opt.model)
     opt.mean = get_mean(opt.norm_value, dataset=opt.mean_dataset)
     opt.std = get_std(opt.norm_value)
-    opt.store_name = '_'.join([opt.dataset, opt.model, '_'.join([modality for modality in opt.modalities]), opt.aggr_type])
-    print(opt)
-    with open(os.path.join(opt.result_path, 'opts_{}_{}_{}.json'.format(opt.dataset, opt.model, '_'.join([modality for modality in opt.modalities]), opt.aggr_type)), 'w') as opt_file:
+    opt.store_name = '_'.join([opt.dataset, opt.model, '_'.join([modality for modality in opt.modalities]), aggrs])
+    # print(opt)
+    with open(os.path.join(opt.result_path, 'opts_{}_{}_{}_{}.json'.format(opt.dataset, opt.model, '_'.join([modality for modality in opt.modalities]), aggrs)), 'w') as opt_file:
         json.dump(vars(opt), opt_file)
 
     torch.manual_seed(opt.manual_seed)
@@ -71,7 +75,7 @@ if __name__ == '__main__':
     '''
     for name, param in model.state_dict().items():
         print(name)
-    '''
+    #'''
     criterion = nn.CrossEntropyLoss()
     if opt.gpu is not None:
         criterion = criterion.cuda()
@@ -113,10 +117,10 @@ if __name__ == '__main__':
         training_data = get_training_set(opt, spatial_transform, temporal_transform, target_transform)
         train_loader = torch.utils.data.DataLoader(training_data, batch_size=opt.batch_size, shuffle=True, num_workers=opt.n_threads, pin_memory=True)
         train_logger = Logger(
-            os.path.join(opt.result_path, 'train{}_{}.log'.format(''.join(['_'+modality for modality in opt.modalities]), opt.aggr_type)),
+            os.path.join(opt.result_path, 'train{}_{}.log'.format(''.join(['_'+modality for modality in opt.modalities]), aggrs)),
             ['epoch', 'loss', 'prec1', 'prec5', 'lr'])
         train_batch_logger = Logger(
-            os.path.join(opt.result_path, 'train_batch{}_{}.log'.format(''.join(['_'+modality for modality in opt.modalities]), opt.aggr_type)),
+            os.path.join(opt.result_path, 'train_batch{}_{}.log'.format(''.join(['_'+modality for modality in opt.modalities]), aggrs)),
             ['epoch', 'batch', 'iter', 'loss', 'prec1', 'prec5', 'lr'])
 
         if opt.nesterov:
@@ -168,8 +172,8 @@ if __name__ == '__main__':
         val_log_info = ['epoch', 'loss', 'prec1', 'prec5']
         for modality in opt.modalities:
             val_log_info.append(modality+'_prec1')
-        val_logger = Logger(os.path.join(opt.result_path, 'val{}_{}.log'.format(''.join(['_'+modality for modality in opt.modalities]), opt.aggr_type)), val_log_info)
-
+        val_logger = Logger(os.path.join(opt.result_path, 'val{}_{}.log'.format(''.join(['_'+modality for modality in opt.modalities]), aggrs)), val_log_info)
+        
     best_prec1 = 0
     mods_best_prec1 = list([0. for modality in opt.modalities])
     if opt.resume_path:

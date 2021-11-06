@@ -215,8 +215,7 @@ def mobilenetv2(pretrained: bool = False, progress: bool = True, num_classes:int
     """
     model = MobileNetV2(**kwargs)
     if pretrained:
-        state_dict = load_state_dict_from_url(model_urls['mobilenet_v2'],
-                                              progress=progress)
+        state_dict = load_state_dict_from_url(model_urls['mobilenet_v2'], progress=progress)
         model.load_state_dict(state_dict)
         model.classifier = nn.Sequential(
             nn.Dropout(0.2),

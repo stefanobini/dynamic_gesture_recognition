@@ -47,7 +47,14 @@ def test(data_loader, model, opt, class_names):
         with torch.no_grad():
             inputs = Variable(inputs)
         # print('########### Input ###########\nType: {}\nTensor size: {}\n\n#############################'.format(type(inputs), inputs.size()))
-        outputs, cnns_outputs, features_outputs = model(inputs)
+        if opt.cnn_dim == 3:
+            # outputs = model(inputs)
+            outputs, cnns_outputs, features_outputs = model(inputs)
+            # outputs, features_outputs = model(inputs)
+        elif opt.cnn_dim == 2:
+            outputs = model(inputs)
+        else:
+            print('ERROR: "cnn_dim={}" is not acceptable.'.format(opt.cnn_dim))
         # print('Type: {}\nShape: {}\nPrediction:\n{}'. format(type(outputs), outputs.shape, outputs))
         if not opt.no_softmax_in_test:
             outputs = F.softmax(outputs, dim=1)

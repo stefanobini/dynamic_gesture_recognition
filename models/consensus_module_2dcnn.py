@@ -10,52 +10,99 @@ from models.resnext_2d import resnext101_32x8d
 
 
 class ConsensusModule2DCNN(nn.Module):
-    def __init__(self, num_classes=249, n_finetune_classes=249, sample_size=112, width_mult=1., sample_duration=16, aggr_type='avg', net=mobilenetv2):
+    def __init__(self, num_classes=249, n_finetune_classes=249, sample_size=112, sample_duration=16, modalities=['RGB'], mod_aggr='none', temp_aggr='avg', net=mobilenetv2, width_mult=1., groups=3, width_per_group=32):
         super(ConsensusModule2DCNN, self).__init__()
         self.sample_duration = sample_duration
         self.num_classes = num_classes
         self.n_finetune_classes = n_finetune_classes
+        self.modalities = modalities
         
-        self.cnns = nn.ModuleList()
-        for i in range(self.sample_duration):
-            cnn = nn.Sequential(
-                # nn.AdaptiveAvgPool2d((32, 32)),
-                net(pretrained=True, num_classes=num_classes))
-            self.cnns.append(cnn)
+        self.temp_aggr = temp_aggr
+        assert(self.temp_aggr in ['MLP', 'LSTM', 'avg', 'max'])
+        self.mod_aggr = mod_aggr
+        assert(self.mod_aggr in ['MLP', 'avg', 'max', 'none'])
+        self.mod_aggregator = None
         
-        self.aggr_type = aggr_type
-        self.aggregator = None
-        assert(self.aggr_type in ['MLP', 'LSTM', 'avg'])
-        if self.aggr_type == 'MLP':
-            self.aggregator = nn.Sequential(
+        self.temp_aggregators = nn.ModuleList()
+        self.mod_nets = nn.ModuleList()     # sets of 2D-CNNs, one for each modality, each set is composed by a set of 2D-CNNs one for each frame
+        for mod in range(len(modalities)):
+            temp_nets = nn.ModuleList()
+            temp_aggregator = None
+            for frame in range(self.sample_duration):
+                cnn = nn.Sequential(
+                    # nn.AdaptiveAvgPool2d((32, 32)),
+                    net(pretrained=True, num_classes=num_classes))
+                temp_nets.append(cnn)
+                
+                # Adding temporal aggregator
+                if self.temp_aggr == 'MLP':
+                    temp_aggregator = nn.Sequential(
+                        # nn.Dropout(0.2),
+                        nn.ReLU(),
+                        nn.Linear(self.num_classes * self.sample_duration, self.num_classes)
+                    )
+                    self.temp_aggregators.append(temp_aggregator)
+                elif self.temp_aggr == 'LSTM':
+                    temp_aggregator = nn.LSTM(input_size=self.num_classes, hidden_size=self.num_classes, batch_first=False, bidirectional=True)
+                    self.temp_aggregators.append(temp_aggregator)
+                   
+            self.mod_nets.append(temp_nets)
+         
+        if self.mod_aggr == 'MLP':
+            self.mod_aggregator = nn.Sequential(
                 # nn.Dropout(0.2),
                 nn.ReLU(),
-                nn.Linear(self.num_classes * self.sample_duration, self.num_classes)
+                nn.Linear(self.num_classes * len(self.modalities), self.num_classes)
             )
-        elif self.aggr_type == 'LSTM':
-            self.aggregator = nn.LSTM(input_size=self.num_classes, hidden_size=self.num_classes, batch_first=False, bidirectional=True)
     
     def forward(self, x: Tensor) -> Tensor:
-        # print('INPUT SAMPLE: ', x.size())
-        if self.aggr_type == 'MLP':
-            # iterate on the frames
-            x = torch.cat([self.cnns[i](x[:, 0, i, :, :, :]) for i in range(x.size(1))], dim=1)  # self.cnns[i](x[:, 0, i, :, :, :])[0], have insert [0], because the forward of Mobilenet2d return also the features
-            x = self.aggregator(x)
-        elif self.aggr_type == 'LSTM':
-            h_0 = torch.randn(2, x.size(0), self.n_finetune_classes).cuda()
-            c_0 = torch.randn(2, x.size(0), self.n_finetune_classes).cuda()
-            for i in range(x.size(1)):
-                pred = self.cnns[i](x[:, 0, i, :, :, :])
-                x1, (h_0, c_0) = self.aggregator(pred.view(-1, x.size(0), self.n_finetune_classes), (h_0, c_0))
-            x = x1[-1]
-            x = x.view(x.size(0), -1, x.size(1))      # stack output of bidirectional cells, because it is doubled
-            x = x.mean(dim=1)                                           # average the output of bidirectional cells
-        elif self.aggr_type == 'avg':
-            x = torch.stack([self.cnns[i](x[:, 0, i, :, :, :]) for i in range(x.size()[1])], dim=1)
+        # print('0 - INPUT SAMPLE: ', x.size())
+        cnns_outputs = list()
+        for i in range(x.size(1)):
+            if self.temp_aggr == 'MLP':
+                # iterate on the frames
+                # print('1 - cons_2dcnn x size: ', x[:, i, 0, :, :, :].size())
+                cnn_output = torch.cat([self.mod_nets[i][j](x[:, i, j, :, :, :]) for j in range(x.size(2))], dim=1)  # self.cnns[i](x[:, 0, i, :, :, :])[0], have insert [0], because the forward of Mobilenet2d return also the features
+                # print('2 - cons_2dcnn cnn size: ', cnn_output.size())
+                cnn_output = self.temp_aggregators[i](cnn_output)
+            elif self.temp_aggr == 'LSTM':
+                h_0 = torch.randn(2, x.size(0), self.n_finetune_classes).cuda()
+                c_0 = torch.randn(2, x.size(0), self.n_finetune_classes).cuda()
+                for j in range(x.size(1)):
+                    pred = self.mod_nets[i][j](x[:, i, j, :, :, :])
+                    x1, (h_0, c_0) = self.temp_aggregators[i](pred.view(-1, x.size(0), self.n_finetune_classes), (h_0, c_0))
+                cnn_output = x1[-1]
+                cnn_output = cnn_output.view(cnn_output.size(0), -1, cnn_output.size(1))      # stack output of bidirectional cells, because it is doubled
+                cnn_output = cnn_output.mean(dim=1)                                           # average the output of bidirectional cells
+            elif self.temp_aggr == 'avg':
+                cnn_output = torch.stack([self.mod_nets[i][j](x[:, i, j, :, :, :]) for j in range(x.size(2))], dim=1)
+                cnn_output = cnn_output.mean(dim=1)
+            elif self.temp_aggr == 'max':
+                cnn_output = torch.stack([self.mod_nets[i][j](x[:, i, j, :, :, :]) for j in range(x.size(2))], dim=1)
+                cnn_output = cnn_output.max(dim=1)
+            else:
+                cnn_output = None
+            cnns_outputs.append(cnn_output)
+        
+        # print('3 - cons_2dcnn cnns size: {}\tlenght: {}'.format(cnns_outputs[0].size(), len(cnns_outputs)))
+        if self.mod_aggr == 'MLP':
+            x = torch.cat(cnns_outputs, dim=1)
+            x = self.mod_aggregator(x)
+        elif self.mod_aggr == 'avg':
+            x = torch.stack(cnns_outputs, dim=1)
             x = x.mean(dim=1)
+        elif self.mod_aggr == 'max':
+            x = torch.stack(cnns_outputs, dim=1)
+            x = x.max(dim=1)
+        elif self.mod_aggr == 'none':  # the case in which use a single modality
+            # print('4 - HEY')
+            x = cnns_outputs[0]
+            # cnns_outputs = x
         else:
             x = None
-        return x
+            cnns_outputs = None
+        # print('5 - cons_2dcnn X size: {}\tcnns_outputs: {}'.format(x.size(), cnns_outputs[0].size()))
+        return x, cnns_outputs
 
 
 def get_fine_tuning_parameters(model, ft_portion):

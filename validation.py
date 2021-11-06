@@ -32,8 +32,14 @@ def val_epoch(epoch, data_loader, model, criterion, opt, logger):
         with torch.no_grad():
             inputs = Variable(inputs)
             targets = Variable(targets)
-        # outputs, features_outputs = model(inputs)
-        outputs, cnns_outputs, features_outputs = model(inputs)
+        if opt.cnn_dim == 3:
+            # outputs = model(inputs)
+            outputs, cnns_outputs, features_outputs = model(inputs)
+            # outputs, features_outputs = model(inputs)
+        elif opt.cnn_dim == 2:
+            outputs, cnns_outputs = model(inputs)
+        else:
+            print('ERROR: "cnn_dim={}" is not acceptable.'.format(opt.cnn_dim))
         '''
         print('************** VALIDATION **************\n')
         print('Final output: {}\nCnns output: {}\nCNNs features: {}'.format(outputs.size(), cnns_outputs.size(), features_outputs.size() if (features_outputs is not None) else features_outputs))

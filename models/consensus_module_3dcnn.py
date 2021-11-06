@@ -16,7 +16,7 @@ from res3d_clstm_mobilenet import Res3D_cLSTM_MobileNet
 '''
 
 class ConsensusModule3DCNN(nn.Module):
-    def __init__(self, num_classes=249, n_finetune_classes=249, sample_size=112, sample_duration=16, aggr_type='avg', net=resnext, modalities=['RGB'], feat_fusion=False, **kwargs):
+    def __init__(self, num_classes=249, n_finetune_classes=249, sample_size=112, sample_duration=16, mod_aggr='avg', net=resnext, modalities=['RGB'], feat_fusion=False, **kwargs):
         super(ConsensusModule3DCNN, self).__init__()
         self.sample_duration = sample_duration
         self.num_classes = num_classes
@@ -31,14 +31,14 @@ class ConsensusModule3DCNN(nn.Module):
                 cnn = net(num_classes=num_classes, sample_size=sample_size, sample_duration=sample_duration, **kwargs)
             self.cnns.append(cnn)
         
-        self.aggr_type = aggr_type
+        self.mod_aggr = mod_aggr
         self.aggregator = None
-        assert(self.aggr_type in ['MLP', 'avg', 'max', 'none'])
+        assert(self.mod_aggr in ['MLP', 'avg', 'max', 'none'])
         
         ########## Level in which fuse modalities ##########
         self.feat_dim = self.cnns[0].classifier.in_features  if feat_fusion else self.num_classes
         
-        if self.aggr_type == 'MLP':
+        if self.mod_aggr == 'MLP':
             self.aggregator = nn.Sequential(
                 # nn.Dropout(0.2),
                 nn.ReLU(),
@@ -50,31 +50,30 @@ class ConsensusModule3DCNN(nn.Module):
         # print('ConsensusModule3DCNN input shape: {}'.format(x.size()))  # (16, 1, 3, 16, 112, 112)
         cnns_outputs = list()
         cnns_features = list()
-        # x = x.div(255)
-        if self.aggr_type == 'MLP':
+        if self.mod_aggr == 'MLP':
             # iterate on the modalities
             for i in range(x.size(1)):
-                cnn_output = self.cnns[i](x[:, i, :, :, :])
+                cnn_output = self.cnns[i](x[:, i, :, :, :, :])
                 cnns_outputs.append(cnn_output[0])
                 cnns_features.append(cnn_output[1])
             x = torch.cat(cnns_outputs, dim=1)
             x = self.aggregator(x)
-        elif self.aggr_type == 'avg':
+        elif self.mod_aggr == 'avg':
             for i in range(x.size(1)):
-                cnn_output = self.cnns[i](x[:, i, :, :, :])
+                cnn_output = self.cnns[i](x[:, i, :, :, :, :])
                 cnns_outputs.append(cnn_output[0])
                 cnns_features.append(cnn_output[1])
             x = torch.stack(cnns_outputs, dim=1)
             x = x.mean(dim=1)
-        elif self.aggr_type == 'max':
+        elif self.mod_aggr == 'max':
             for i in range(x.size(1)):
-                cnn_output = self.cnns[i](x[:, i, :, :, :])
+                cnn_output = self.cnns[i](x[:, i, :, :, :, :])
                 cnns_outputs.append(cnn_output[0])
                 cnns_features.append(cnn_output[1])
             x = torch.stack(cnns_outputs, dim=1)
             x = x.max(dim=1)
-        elif self.aggr_type == 'none':  # the case in which use a single modality
-            x, cnns_features = self.cnns[0](x[:, 0, :, :, :])
+        elif self.mod_aggr == 'none':  # the case in which use a single modality
+            x, cnns_features = self.cnns[0](x[:, 0, :, :, :, :])
             cnns_outputs = x
         else:
             x = None
@@ -144,7 +143,7 @@ def get_model(net='resnext', *args, **kwargs):
     
 if __name__ == "__main__":
     kwargs = dict()
-    model = get_model(num_classes=249, sample_size=112, sample_duration=16, net='res3d_clstm_mn', aggr_type='none', modalities=['RGB'], feat_fusion=False)
+    model = get_model(num_classes=249, sample_size=112, sample_duration=16, net='res3d_clstm_mn', mod_aggr='none', modalities=['RGB'], feat_fusion=False)
     # print(model)
     model = model.cuda()
     model = nn.DataParallel(model, device_ids=[0])

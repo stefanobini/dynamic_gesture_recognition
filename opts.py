@@ -49,7 +49,7 @@ def parse_opts():
     parser.add_argument('--cnn_dim', default=3, type=int, help='Dimension of convolutional kernel (2 | 3')
     parser.add_argument('--model', default='resnet', type=str, help='(resnet | preresnet | wideresnet | resnext | densenet | ')
     parser.add_argument('--version', default=1.1, type=float, help='Version of the model')
-    parser.add_argument('--model_depth', default=18, type=int, help='Depth of resnet (10 | 18 | 34 | 50 | 101)')
+    parser.add_argument('--model_depth', default=101, type=int, help='Depth of resnet (10 | 18 | 34 | 50 | 101)')
     parser.add_argument('--resnet_shortcut', default='B', type=str, help='Shortcut type of resnet (A | B)')
     parser.add_argument('--wide_resnet_k', default=2, type=int, help='Wide resnet k')
     parser.add_argument('--resnext_cardinality', default=32, type=int, help='ResNeXt cardinality')
@@ -58,7 +58,8 @@ def parse_opts():
     parser.add_argument('--shallow_layer_num', default=2, type=int)
     parser.add_argument('--middle_layer_num', default=5, type=int)
     parser.add_argument('--high_layer_num', default=2, type=int)
-    parser.add_argument('--aggr_type', default='none', type=str, help='(MLP | LSTM | avg | none')
+    parser.add_argument('--temp_aggr', default='none', type=str, help='(MLP | LSTM | avg | max')
+    parser.add_argument('--mod_aggr', default='none', type=str, help='(MLP | avg | max | none')
     parser.add_argument('--feat_fusion', action='store_true', help='If true, modalities fusion is applied to feature level')
     parser.set_defaults(feat_fusion=False)
     

@@ -2,7 +2,6 @@ import os
 import torch
 from torch import nn
 
-from models import c3d, squeezenet, mobilenet, shufflenet, mobilenetv2, shufflenetv2, resnext, resnet, consensus_module_2dcnn
 from models import mobilenetv2, resnext, consensus_module_2dcnn, consensus_module_3dcnn
 
     
@@ -19,7 +18,9 @@ def generate_model_3d(opt):
             width_mult=opt.width_mult,
             net=opt.model,
             modalities=opt.modalities,
-            aggr_type=opt.aggr_type)
+            mod_aggr=opt.mod_aggr,
+            feat_fusion=opt.feat_fusion,
+            ssa_loss=opt.SSA_loss)
     elif opt.model == 'resnext':
         model = consensus_module_3dcnn.get_model(
             num_classes=opt.n_classes,
@@ -30,7 +31,7 @@ def generate_model_3d(opt):
             sample_duration=opt.sample_duration,
             net=opt.model,
             modalities=opt.modalities,
-            aggr_type=opt.aggr_type,
+            mod_aggr=opt.mod_aggr,
             feat_fusion=opt.feat_fusion,
             ssa_loss=opt.SSA_loss)
     elif opt.model == 'res3d_clstm_mn':
@@ -41,7 +42,7 @@ def generate_model_3d(opt):
             sample_duration=opt.sample_duration,
             net=opt.model,
             modalities=opt.modalities,
-            aggr_type=opt.aggr_type)
+            mod_aggr=opt.mod_aggr)
     elif opt.model == 'raar3d':
         # from models.res3d_clstm_mobilenet import get_fine_tuning_parameters
         model = consensus_module_3dcnn.get_model(
@@ -51,7 +52,7 @@ def generate_model_3d(opt):
             sample_duration=opt.sample_duration,
             net=opt.model,
             modalities=opt.modalities,
-            aggr_type=opt.aggr_type,
+            mod_aggr=opt.mod_aggr,
             shallow_layer_num=opt.shallow_layer_num,
             middle_layer_num=opt.middle_layer_num,
             high_layer_num=opt.high_layer_num)
@@ -64,7 +65,7 @@ def generate_model_3d(opt):
             sample_duration=opt.sample_duration,
             net=opt.model,
             modalities=opt.modalities,
-            aggr_type=opt.aggr_type,
+            mod_aggr=opt.mod_aggr,
             shallow_layer_num=opt.shallow_layer_num,
             middle_layer_num=opt.middle_layer_num,
             high_layer_num=opt.high_layer_num)
@@ -113,7 +114,7 @@ def generate_model_3d(opt):
             
             if opt.n_classes != opt.n_finetune_classes:
                 # change the output of the final output
-                if opt.aggr_type == 'MLP':
+                if opt.mod_aggr == 'MLP':
                     model.module.aggregator = nn.Sequential(
                                     # nn.Dropout(0.9),
                                     nn.ReLU(),
@@ -171,28 +172,29 @@ def generate_model_2d(opt):
             num_classes=opt.n_classes,
             n_finetune_classes=opt.n_finetune_classes,
             sample_size=opt.sample_size,
-            width_mult=opt.width_mult,
             sample_duration=opt.sample_duration,
-            aggr_type=opt.aggr_type)
+            mod_aggr=opt.mod_aggr,
+            temp_aggr=opt.temp_aggr,
+            width_mult=opt.width_mult)
     elif opt.model == 'resnext_2d':
         assert opt.model_depth in [101]
         from models.consensus_module_2dcnn import get_fine_tuning_parameters
         if opt.model_depth == 101:
             model = consensus_module_2dcnn.get_model(
                 net=opt.model,
-                arch=opt.model_depth,
                 num_classes=opt.n_classes,
                 n_finetune_classes=opt.n_finetune_classes,
-                shortcut_type=opt.resnet_shortcut,
-                cardinality=opt.resnext_cardinality,
                 sample_size=opt.sample_size,
                 sample_duration=opt.sample_duration,
-                aggr_type=opt.aggr_type)
+                modalities=opt.modalities,
+                mod_aggr=opt.mod_aggr,
+                temp_aggr=opt.temp_aggr,
+                groups=opt.groups,
+                width_per_group=opt.resnext_cardinality)
 
     if opt.gpu is not None:
         model = model.cuda()
-        # model = nn.DataParallel(model, device_ids=[0])
-        model = nn.DataParallel(model)
+        model = nn.DataParallel(model, device_ids=None)
         '''
         pytorch_total_params = sum(p.numel() for p in model.parameters() if
                                p.requires_grad)
@@ -209,29 +211,37 @@ def generate_model_2d(opt):
                 return model, model.parameters()
             
             # change the output of the final output
-            if opt.aggr_type == 'MLP':
-                model.module.aggregator = nn.Sequential(
+            if opt.temp_aggr == 'MLP':
+                model.module.temp_aggregator = nn.Sequential(
                                 # nn.Dropout(0.9),
                                 nn.ReLU(),
                                 nn.Linear(opt.n_finetune_classes * opt.sample_duration, opt.n_finetune_classes))
-                model.module.aggregator = model.module.aggregator.cuda()
-            elif opt.aggr_type == 'LSTM':
-                model.module.aggregator = nn.LSTM(opt.n_finetune_classes, opt.n_finetune_classes, batch_first=False, bidirectional=True)
-                model.module.aggregator = model.module.aggregator.cuda()
+                model.module.temp_aggregator = model.module.temp_aggregator.cuda()
+            elif opt.temp_aggr == 'LSTM':
+                model.module.temp_aggregator = nn.LSTM(opt.n_finetune_classes, opt.n_finetune_classes, batch_first=False, bidirectional=True)
+                model.module.temp_aggregator = model.module.temp_aggregator.cuda()
             '''
                 model.module.aggregator = nn.Sequential(
                     nn.LSTM(opt.n_finetune_classes, opt.n_finetune_classes)
             '''
-            
-            # change the output size of single cnn
-            for i in range(opt.sample_duration):
-                model.module.cnns[i][0].classifier = nn.Sequential(
-                    nn.Dropout(0.2),
-                    nn.Linear(model.module.cnns[i][0].classifier[1].in_features, opt.n_finetune_classes),
+            if opt.mod_aggr == 'MLP':
+                model.module.mod_aggregator = nn.Sequential(
+                    # nn.Dropout(0.2),
+                    nn.ReLU(),
+                    nn.Linear(opt.n_finetune_classes * len(opt.modalities), self.n_finetune_classes)
                 )
-                # print('########## {}° network ##########\n{}################################'.format(i, model.module.cnns[i][0].classifier))
-                model.module.cnns[i][0].classifier.cuda()
-            # print('########## CNNs ##########\n{}################################'.format(model.module.cnns))
+                model.module.mod_aggregator = model.module.mod_aggregator.cuda()
+            
+            for i in range(len(opt.modalities)):
+                # change the output size of single cnn
+                for j in range(opt.sample_duration):
+                    model.module.mod_nets[i][j][0].classifier = nn.Sequential(
+                        nn.Dropout(0.2),
+                        nn.Linear(model.module.mod_nets[i][j][0].classifier[1].in_features, opt.n_finetune_classes),
+                    )
+                    # print('########## {}° network ##########\n{}################################'.format(i, model.module.cnns[i][0].classifier))
+                    model.module.mod_nets[i][j][0].classifier.cuda()
+                # print('########## CNNs ##########\n{}################################'.format(model.module.cnns))
             '''
             else:
                 model.module.aggregator = nn.Linear(model.module.aggregator.in_features, opt.n_finetune_classes)
@@ -250,27 +260,21 @@ def generate_model_2d(opt):
             if opt.test or opt.ft_portion == 'none':
                 return model, model.parameters()
             
-            if opt.aggr_type == 'MLP':
-                model.module.aggregator = nn.Sequential(
+            if opt.temp_aggr == 'MLP':
+                model.module.temp_aggregator = nn.Sequential(
                                 # nn.Dropout(0.9),
                                 nn.ReLU(),
-                                nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes))
-                model.module.aggregator = model.module.aggregator.cuda()
-            elif opt.aggr_type == 'LSTM':
-                self.aggregator = nn.LSTM(input_size=self.n_finetune_classes, hidden_size=self.n_finetune_classes, batch_first=False, bidirectional=True)
-                '''
-                self.aggregator = nn.Sequential(
-                    nn.LSTM(self.num_classes, self.num_classes),
-                    nn.Dropout(0.9),
-                    nn.Linear(model.module.aggregator[1].in_features, opt.n_finetune_classes),
+                                nn.Linear(model.module.temp_aggregator[1].in_features, opt.n_finetune_classes))
+                model.module.temp_aggregator = model.module.temp_aggregator.cuda()
+            elif opt.temp_aggr == 'LSTM':
+                self.temp_aggregator = nn.LSTM(input_size=self.n_finetune_classes, hidden_size=self.n_finetune_classes, batch_first=False, bidirectional=True)
+                model.module.temp_aggregator = model.module.temp_aggregator.cuda()
+            if opt.mod_aggr == 'MLP':
+                model.module.mod_aggregator = nn.Sequential(
+                    # nn.Dropout(0.2),
+                    nn.ReLU(),
+                    nn.Linear(opt.n_finetune_classes * len(opt.modalities), self.n_finetune_classes)
                 )
-                '''
-                model.module.aggregator = model.module.aggregator.cuda()
-            '''
-            else:
-                model.module.aggregator = nn.Linear(model.module.aggregator.in_features, opt.n_finetune_classes)
-                model.module.aggregator = model.module.aggregator.cuda()
-            '''
             
             parameters = get_fine_tuning_parameters(model, opt.ft_begin_index)
             return model, parameters
