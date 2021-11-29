@@ -4,8 +4,7 @@ from datasets.jester import Jester
 from datasets.isogd import IsoGD
 from datasets.nvgesture import NVGesture
 
-def get_training_set(opt, spatial_transform, temporal_transform,
-                     target_transform):
+def get_training_set(opt, spatial_transform, temporal_transform, target_transform):
     assert opt.dataset in ['jester', 'isogd', 'nvgesture']
 
     if opt.dataset == 'jester':
@@ -44,8 +43,7 @@ def get_training_set(opt, spatial_transform, temporal_transform,
     return training_data
 
 
-def get_validation_set(opt, spatial_transform, temporal_transform,
-                       target_transform):
+def get_validation_set(opt, spatial_transform, temporal_transform, target_transform):
     assert opt.dataset in ['jester', 'isogd', 'nvgesture']
 
     if opt.dataset == 'jester':

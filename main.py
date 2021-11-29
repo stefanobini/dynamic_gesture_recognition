@@ -10,7 +10,7 @@ from pytorch_model_summary import summary
 import copy
 
 from opts import parse_opts
-from model import generate_model_2d, generate_model_3d
+from model import generate_model_2d, generate_model_3d, generate_model_ts
 from mean import get_mean, get_std
 from spatial_transforms import *
 from temporal_transforms import *
@@ -28,7 +28,7 @@ from torchinfo import summary
 if __name__ == '__main__':
     opt = parse_opts()
     os.environ['CUDA_VISIBLE_DEVICES']=opt.gpu
-    if opt.cnn_dim == 3:
+    if opt.cnn_dim in [0, 3]:
         aggrs = opt.mod_aggr
     elif opt.cnn_dim == 2:
         aggrs = opt.temp_aggr + '_' + opt.mod_aggr
@@ -55,12 +55,16 @@ if __name__ == '__main__':
 
     torch.manual_seed(opt.manual_seed)
     
-    input_shape = (opt.batch_size, 3, opt.sample_duration, opt.sample_size, opt.sample_size)
+    input_shape = (opt.batch_size, len(opt.modalities), 3, opt.sample_duration, opt.sample_size, opt.sample_size)
     if opt.cnn_dim == 3:
         model, parameters = generate_model_3d(opt)
-    else:
+        input_shape = (opt.batch_size, len(opt.modalities), 3, opt.sample_duration, opt.sample_size, opt.sample_size)
+    elif opt.cnn_dim == 2:
         model, parameters = generate_model_2d(opt)
-        input_shape = (opt.batch_size, opt.sample_duration, 3, opt.sample_size, opt.sample_size)
+        # input_shape = (opt.batch_size, opt.sample_duration, 3, opt.sample_size, opt.sample_size)
+    elif opt.cnn_dim == 0:
+        model, parameters = generate_model_ts(opt)      # TimeSformer
+        input_shape = (opt.batch_size, len(opt.modalities), opt.sample_duration, 3, opt.sample_size, opt.sample_size)
     '''
     print('######### Parameters: #########')
     pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)

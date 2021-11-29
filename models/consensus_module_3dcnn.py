@@ -9,11 +9,14 @@ from models.mobilenetv2 import get_model as mobilenetv2
 from models.resnext import resnext101 as resnext
 from models.res3d_clstm_mobilenet import Res3D_cLSTM_MobileNet
 from models import RAAR3DNet, NI3D
+#from models.EAN_16f import resnet101 as transformer
 '''
 from mobilenetv2 import get_model as mobilenetv2
 from resnext import resnext101 as resnext
-from res3d_clstm_mobilenet import Res3D_cLSTM_MobileNet
-'''
+import RAAR3DNet, NI3D
+#from res3d_clstm_mobilenet import Res3D_cLSTM_MobileNet
+from EAN_16f import resnet101 as transformer
+#'''
 
 class ConsensusModule3DCNN(nn.Module):
     def __init__(self, num_classes=249, n_finetune_classes=249, sample_size=112, sample_duration=16, mod_aggr='avg', net=resnext, modalities=['RGB'], feat_fusion=False, **kwargs):
@@ -113,6 +116,10 @@ def get_model(net='resnext', *args, **kwargs):
         model = ConsensusModule3DCNN(net=mobilenetv2, *args, **kwargs)
     elif net == 'resnext':
         model = ConsensusModule3DCNN(net=resnext, *args, **kwargs)
+    elif net == 'tran_renext':
+        model = ConsensusModule3DCNN(net=transformer, *args, **kwargs)
+    elif net == 'tran_mobilenetv2':
+        model = ConsensusModule3DCNN(net=transformer, *args, **kwargs)
     elif net == 'res3d_clstm_mn':
         model = ConsensusModule3DCNN(net=Res3D_cLSTM_MobileNet, *args, **kwargs)
     elif net == 'raar3d':
@@ -143,7 +150,7 @@ def get_model(net='resnext', *args, **kwargs):
     
 if __name__ == "__main__":
     kwargs = dict()
-    model = get_model(num_classes=249, sample_size=112, sample_duration=16, net='res3d_clstm_mn', mod_aggr='none', modalities=['RGB'], feat_fusion=False)
+    model = get_model(num_classes=249, sample_size=112, sample_duration=16, net='transformer', mod_aggr='none', modalities=['RGB'], feat_fusion=False)
     # print(model)
     model = model.cuda()
     model = nn.DataParallel(model, device_ids=[0])

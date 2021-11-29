@@ -97,7 +97,7 @@ class ConsensusModule2DCNN(nn.Module):
         elif self.mod_aggr == 'none':  # the case in which use a single modality
             # print('4 - HEY')
             x = cnns_outputs[0]
-            # cnns_outputs = x
+            cnns_outputs = x
         else:
             x = None
             cnns_outputs = None

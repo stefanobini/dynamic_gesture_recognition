@@ -166,23 +166,18 @@ class ResNet(nn.Module):
             # the 2x2 stride with a dilated convolution instead
             replace_stride_with_dilation = [False, False, False]
         if len(replace_stride_with_dilation) != 3:
-            raise ValueError("replace_stride_with_dilation should be None "
-                             "or a 3-element tuple, got {}".format(replace_stride_with_dilation))
+            raise ValueError("replace_stride_with_dilation should be None or a 3-element tuple, got {}".format(replace_stride_with_dilation))
         self.groups = groups
         self.base_width = width_per_group
         self.last_layer = 512 * block.expansion
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3,
-                               bias=False)
+        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2,
-                                       dilate=replace_stride_with_dilation[0])
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2,
-                                       dilate=replace_stride_with_dilation[1])
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2,
-                                       dilate=replace_stride_with_dilation[2])
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0])
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1])
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.classifier = nn.Linear(512 * block.expansion, num_classes)
 
@@ -248,6 +243,40 @@ class ResNet(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         return self._forward_impl(x)
+
+
+class ResNetFeatures(nn.Module):
+    '''
+    ResNetFeatures outputs the lower level features from pretrained ResNet till the intial 5 layers 
+    (conv1, bn1, relu, maxpool, layer1(3 conv layers)) to be used in the hybrid architecture to be 
+    able to kickstart the learining faster. The sequence of operations is as follows :-
+
+    Input -> conv1 -> bn1 -> relu -> maxpool -> layer1 -> Output
+
+    Args:
+        No arguments required
+    
+    Methods:
+        forward(inp) :-
+        Applies the sequence of operations mentioned above.
+        (batch_size, 3, 224, 224) -> (batch_size, 64, 56, 56)
+    
+    Examples:
+        >>> resnet_features = ResNetFeatures()
+        >>> out = resnet_features(inp)
+    '''
+    def __init__(self):
+        super(ResNetFeatures, self).__init__()
+        layers = list(resnet34(pretrained=True).children())[:5] #all layer expect last layer
+        self.feature_extractor = nn.Sequential(*layers)
+        
+    def forward(self, inp):
+        # inp: (batch_size, 3, 224, 224)
+
+        out = self.feature_extractor(inp)
+
+        # out: (batch_size, 64, 56, 56)
+        return out
 
 
 def _resnet(

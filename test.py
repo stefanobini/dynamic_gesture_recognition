@@ -47,7 +47,7 @@ def test(data_loader, model, opt, class_names):
         with torch.no_grad():
             inputs = Variable(inputs)
         # print('########### Input ###########\nType: {}\nTensor size: {}\n\n#############################'.format(type(inputs), inputs.size()))
-        if opt.cnn_dim == 3:
+        if opt.cnn_dim in [0, 3]:
             # outputs = model(inputs)
             outputs, cnns_outputs, features_outputs = model(inputs)
             # outputs, features_outputs = model(inputs)

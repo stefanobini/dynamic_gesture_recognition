@@ -41,7 +41,7 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt, epoch_logg
         '''
         inputs = Variable(inputs)
         targets = Variable(targets)
-        if opt.cnn_dim == 3:
+        if opt.cnn_dim in [0, 3]:
             # outputs = model(inputs)
             outputs, cnns_outputs, features_outputs = model(inputs)
             # outputs, features_outputs = model(inputs)

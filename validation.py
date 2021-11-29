@@ -32,7 +32,7 @@ def val_epoch(epoch, data_loader, model, criterion, opt, logger):
         with torch.no_grad():
             inputs = Variable(inputs)
             targets = Variable(targets)
-        if opt.cnn_dim == 3:
+        if opt.cnn_dim in [0, 3]:
             # outputs = model(inputs)
             outputs, cnns_outputs, features_outputs = model(inputs)
             # outputs, features_outputs = model(inputs)
@@ -42,9 +42,12 @@ def val_epoch(epoch, data_loader, model, criterion, opt, logger):
             print('ERROR: "cnn_dim={}" is not acceptable.'.format(opt.cnn_dim))
         '''
         print('************** VALIDATION **************\n')
-        print('Final output: {}\nCnns output: {}\nCNNs features: {}'.format(outputs.size(), cnns_outputs.size(), features_outputs.size() if (features_outputs is not None) else features_outputs))
+        if opt.cnn_dim in [0, 3]:
+            print('Final output: {}\nCnns output: {}\nCNNs features: {}'.format(outputs.size(), cnns_outputs.size(), features_outputs.size() if (features_outputs is not None) else features_outputs))
+        else:
+            print('Final output: {}\nCnns output: {}'.format(outputs.size(), cnns_outputs.size()))
         print('****************************************\n')
-        '''
+        #'''
         loss = criterion(outputs, targets)
         prec1, prec5 = calculate_accuracy(outputs.data, targets.data, topk=(1,5))
         for ii in range(len(opt.modalities)):

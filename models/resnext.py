@@ -166,8 +166,7 @@ class ResNeXt(nn.Module):
                     nn.BatchNorm3d(planes * block.expansion))
 
         layers = []
-        layers.append(
-            block(self.inplanes, planes, cardinality, stride, downsample))
+        layers.append(block(self.inplanes, planes, cardinality, stride, downsample))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             layers.append(block(self.inplanes, planes, cardinality))
