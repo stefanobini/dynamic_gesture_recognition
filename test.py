@@ -52,7 +52,7 @@ def test(data_loader, model, opt, class_names):
             outputs, cnns_outputs, features_outputs = model(inputs)
             # outputs, features_outputs = model(inputs)
         elif opt.cnn_dim == 2:
-            outputs = model(inputs)
+            outputs, cnns_outputs = model(inputs)
         else:
             print('ERROR: "cnn_dim={}" is not acceptable.'.format(opt.cnn_dim))
         # print('Type: {}\nShape: {}\nPrediction:\n{}'. format(type(outputs), outputs.shape, outputs))

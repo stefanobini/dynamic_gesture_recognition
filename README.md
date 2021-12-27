@@ -161,7 +161,7 @@ python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotat
 
 TimeSformer
 ```bash
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_NVGesture/nvgesture.json --result_path results --pretrain_path pretrained_models/jester_timesformer_RGB_none_best.pth --dataset nvgesture --n_classes 27 --n_finetune_classes 25 --ft_portion complete --cnn_dim 0 --model timesformer --n_epochs 35 --lr_steps 17 27 --learning_rate 0.1 --batch_size 32 --n_threads 16 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities MHI_D --mod_aggr none --gpu 2
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_NVGesture/nvgesture.json --result_path results --pretrain_path results/jester/timesformer/jester_timesformer_RGB_none_best.pth --dataset nvgesture --n_classes 27 --n_finetune_classes 25 --ft_portion complete --cnn_dim 0 --model timesformer --n_epochs 35 --lr_steps 17 27 --learning_rate 0.01 --batch_size 32 --n_threads 16 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --mod_aggr none --gpu 1
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_NVGesture/nvgesture.json --result_path results --pretrain_path results --dataset nvgesture --n_classes 25 --n_finetune_classes 25 --ft_portion complete --cnn_dim 0 --model timesformer --n_epochs 35 --lr_steps 17 27 --learning_rate 0.1 --batch_size 32 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB MHI --mod_aggr MLP --gpu 1
 ```
 
@@ -217,14 +217,14 @@ python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotat
 ## Pre-train on 20BN-Jester
 ResNeXt-101
 ```bash
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_Jester/jester.json --result_path results --dataset jester --n_classes 27 --n_finetune_classes 27 --ft_portion complete --cnn_dim 2 --model resnext_2d --n_epochs 60 --lr_steps 30 45 --learning_rate 0.01 --batch_size 8 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities D --temp_aggr avg --gpu 1
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_Jester/jester.json --result_path results --dataset jester --n_classes 27 --n_finetune_classes 27 --ft_portion complete --cnn_dim 2 --model resnext_2d --n_epochs 60 --lr_steps 30 45 --learning_rate 0.001 --batch_size 4 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr avg --gpu 0,1,2
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_Jester/jester.json --result_path results --dataset jester --n_classes 27 --n_finetune_classes 27 --ft_portion complete --cnn_dim 2 --model resnext_2d --n_epochs 60 --lr_steps 30 45 --learning_rate 0.01 --batch_size 32 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr MLP --gpu 3
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_Jester/jester.json --result_path results --dataset jester --n_classes 27 --n_finetune_classes 27 --ft_portion complete --cnn_dim 2 --model resnext_2d --n_epochs 60 --lr_steps 30 45 --learning_rate 0.01 --batch_size 32 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr LSTM --gpu 3
 ```
 
 MobileNet v2
 ```bash
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_Jester/jester.json --result_path results --dataset jester --n_classes 27 --n_finetune_classes 27 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --n_epochs 60 --lr_steps 30 45 --learning_rate 0.01 --batch_size 32 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr avg --gpu 1
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_Jester/jester.json --result_path results --dataset jester --n_classes 27 --n_finetune_classes 27 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --n_epochs 60 --lr_steps 30 45 --learning_rate 0.1 --batch_size 32 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr avg --gpu 1
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_Jester/jester.json --result_path results --dataset jester --n_classes 27 --n_finetune_classes 27 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --n_epochs 60 --lr_steps 30 45 --learning_rate 0.01 --batch_size 32 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr MLP --gpu 3
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_Jester/jester.json --result_path results --dataset jester --n_classes 27 --n_finetune_classes 27 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --n_epochs 60 --lr_steps 30 45 --learning_rate 0.01 --batch_size 32 --n_threads 8 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr LSTM --gpu 3
 ```
@@ -242,27 +242,56 @@ python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/jester/RG
 ### ChaLearn LAP IsoGD
 ResNeXt-101
 ```bash
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --cnn_dim 2 --model resnext_2d --model_depth 101 --groups 3 --train_crop random --scale_step 0.95 --n_epochs 20 --lr_steps 8 15 --learning_rate 0.01 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 7 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr avg --gpu 3
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --pretrain_path results/jester/resnext_2d/jester_resnext_2d_RGB_avg_none_best.pth --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --cnn_dim 2 --model resnext_2d --n_epochs 20 --lr_steps 8 15 --learning_rate 0.01 --batch_size 32 --n_threads 7 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr avg --gpu 1
 ```
 
 MobileNet v2
 ```bash
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --train_crop random --scale_step 0.95 --n_epochs 20 --lr_steps 8 15 --learning_rate 0.01 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 7 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr avg --gpu 3
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --train_crop random --scale_step 0.95 --n_epochs 20 --lr_steps 8 15 --learning_rate 0.01 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 7 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr MLP --gpu 3
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --train_crop random --scale_step 0.95 --n_epochs 20 --lr_steps 8 15 --learning_rate 0.01 --sample_duration 16 --downsample 2 --batch_size 32 --n_threads 7 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr LSTM --gpu 3
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --pretrain_path results/jester/mobilenetv2_2d/jester_mobilenetv2_2d_RGB_avg_none_best.pth --dataset isogd --n_classes 27 --n_finetune_classes 249 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --n_epochs 20 --lr_steps 8 15 --learning_rate 0.01 --batch_size 32 --n_threads 16 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr avg --gpu 1
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --pretrain_path results --dataset isogd --n_classes 249 --n_finetune_classes 249 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --n_epochs 20 --lr_steps 8 15 --learning_rate 0.01 --batch_size 32 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB D --mod_aggr MLP --temp_aggr avg --gpu 1
 ```
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --pretrain_path results --dataset isogd --n_classes 249 --n_finetune_classes 249 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --n_epochs 20 --lr_steps 8 15 --learning_rate 0.01 --batch_size 8 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB D MHI MHI_D --mod_aggr MLP --temp_aggr avg --gpu 0
 
 ### NVIDIA Gesture
+ResNeXt-101
+```bash
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_NVGesture/nvgesture.json --result_path results --pretrain_path results/jester/resnext_2d/jester_resnext_2d_RGB_avg_none_best.pth --dataset isogd --n_classes 27 --n_finetune_classes 25 --ft_portion complete --cnn_dim 2 --model resnext_2d --n_epochs 35 --lr_steps 17 27 --learning_rate 0.01 --batch_size 32 --n_threads 7 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr avg --gpu 3
+```
+
 MobileNet v2
 ```bash
 python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_NVGesture/nvgesture.json --result_path results --pretrain_path results/jester/mobilenetv2_2d/jester_mobilenetv2_2d_RGB_avg_none_best.pth --dataset nvgesture --n_classes 27 --n_finetune_classes 25 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --n_epochs 35 --lr_steps 17 27 --learning_rate 0.01 --batch_size 32 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr avg --mod_aggr none --gpu 1
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_NVGesture/nvgesture.json --result_path results --dataset nvgesture --n_classes 27 --n_finetune_classes 25 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --n_epochs 35 --lr_steps 17 27 --learning_rate 0.01 --batch_size 32 --n_threads 7 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr MLP --gpu 3
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_NVGesture/nvgesture.json --result_path results --dataset nvgesture --n_classes 27 --n_finetune_classes 25 --ft_portion complete --cnn_dim 2 --model mobilenetv2_2d --n_epochs 35 --lr_steps 17 27 --learning_rate 0.01 --batch_size 32 --n_threads 7 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB --temp_aggr LSTM --gpu 3
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_NVGesture/nvgesture.json --result_path results/test --pretrain_path results --dataset nvgesture --n_classes 25 --n_finetune_classes 25 --ft_portion last_layer --cnn_dim 2 --model mobilenetv2_2d --n_epochs 35 --lr_steps 17 27 --learning_rate 0.01 --batch_size 32 --n_threads 4 --checkpoint 1 --n_val_samples 1 --no_hflip --modalities RGB D OF OF_D --temp_aggr avg --mod_aggr MLP --gpu 1
 ```
 
 ## Testing
 
 ### ChaLearn LAP IsoGD
+ResNeXt-101
 ```bash
-python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini/isogd --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results/chalearn_isogd --pretrain_path results/chalearn_isogd/isogd_mobilenetv2_2d_RGB_avg_best.pth --dataset isogd --n_classes 249 --n_finetune_classes 249 --cnn_dim 2 --model mobilenetv2_2d --groups 3 --sample_duration 16 --downsample 2 --batch_size 16 --n_threads 8 --model_depth 101 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities RGB --temp_aggr avg --preds_per_video 249
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --pretrain_path results --dataset isogd --n_classes 249 --n_finetune_classes 249 --cnn_dim 2 --model resnext_2d --batch_size 16 --n_threads 8 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities RGB --temp_aggr avg --mod_aggr none --preds_per_video 249 --gpu 1
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --pretrain_path results/isogd/resnext_2d/isogd_resnext_2d_D_OF_avg_MLP_best.pth --dataset isogd --n_classes 249 --n_finetune_classes 249 --cnn_dim 2 --model resnext_2d --batch_size 16 --n_threads 8 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities D OF --temp_aggr avg --mod_aggr MLP --preds_per_video 249 --gpu 1
+```
+
+MobileNet v2
+```bash
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --pretrain_path results --dataset isogd --n_classes 249 --n_finetune_classes 249 --cnn_dim 2 --model mobilenetv2_2d --batch_size 16 --n_threads 16 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities RGB --temp_aggr avg --mod_aggr none --preds_per_video 249 --gpu 1
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --pretrain_path results/isogd/mobilenetv2_2d/isogd_mobilenetv2_2d_D_OF_avg_MLP_best.pth --dataset isogd --n_classes 249 --n_finetune_classes 249 --cnn_dim 2 --model mobilenetv2_2d --batch_size 16 --n_threads 8 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities D OF --temp_aggr avg --mod_aggr MLP --preds_per_video 249 --gpu 1
+```
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --pretrain_path results/isogd/mobilenetv2_2d/isogd_mobilenetv2_2d_RGB_D_MHI_D_avg_MLP_best.pth --dataset isogd --n_classes 249 --n_finetune_classes 249 --cnn_dim 2 --model mobilenetv2_2d --batch_size 16 --n_threads 8 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities RGB D MHI_D --temp_aggr avg --mod_aggr MLP --preds_per_video 249 --gpu 3
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --pretrain_path results/isogd/mobilenetv2_2d/isogd_mobilenetv2_2d_RGB_D_OF_OF_D_avg_MLP_best.pth --dataset isogd --n_classes 249 --n_finetune_classes 249 --cnn_dim 2 --model mobilenetv2_2d --batch_size 16 --n_threads 8 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities RGB D OF OF_D --temp_aggr avg --mod_aggr MLP --preds_per_video 249 --gpu 3
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_ChaLearn_IsoGD/chalearn_isogd.json --result_path results --pretrain_path results/isogd/mobilenetv2_2d/isogd_mobilenetv2_2d_RGB_D_MHI_MHI_D_avg_MLP_best.pth --dataset isogd --n_classes 249 --n_finetune_classes 249 --cnn_dim 2 --model mobilenetv2_2d --batch_size 16 --n_threads 8 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities RGB D MHI MHI_D --temp_aggr avg --mod_aggr MLP --preds_per_video 249 --gpu 1
+
+
+### NVIDIA Gesture
+ResNeXt-101
+```bash
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_NVGesture/nvgesture.json --result_path results --pretrain_path results --dataset nvgesture --n_classes 249 --n_finetune_classes 249 --cnn_dim 2 --model resnext_2d --batch_size 16 --n_threads 16 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities RGB --temp_aggr avg --mod_aggr none --preds_per_video 25 --gpu 1
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_NVGesture/nvgesture.json --result_path results --pretrain_path results/nvgesture/resnext_2d/nvgesture_resnext_2d_D_OF_avg_MLP_best.pth --dataset nvgesture --n_classes 249 --n_finetune_classes 249 --cnn_dim 2 --model resnext_2d --batch_size 16 --n_threads 8 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities D OF --temp_aggr avg --mod_aggr MLP --preds_per_video 25 --gpu 1
+```
+
+MobileNet v2
+```bash
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_NVGesture/nvgesture.json --result_path results --pretrain_path results --dataset nvgesture --n_classes 25 --n_finetune_classes 25 --cnn_dim 2 --model mobilenetv2_2d --batch_size 16 --n_threads 16 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities RGB --temp_aggr avg --mod_aggr none --preds_per_video 25 --gpu 1
+python3 main.py --root_path ./ --video_path ../../../../mnt/sdc1/sbini --annotation_path annotation_NVGesture/nvgesture.json --result_path results --pretrain_path results/nvgesture/mobilenetv2_2d/nvgesture_mobilenetv2_2d_D_OF_avg_MLP_best.pth --dataset nvgesture --n_classes 25 --n_finetune_classes 25 --cnn_dim 2 --model mobilenetv2_2d --batch_size 16 --n_threads 8 --n_val_samples 1 --no_train --no_val --test --test_subset test --modalities D OF --temp_aggr avg --mod_aggr MLP --preds_per_video 25 --gpu 1
 ```

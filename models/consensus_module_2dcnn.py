@@ -45,7 +45,7 @@ class ConsensusModule2DCNN(nn.Module):
                 elif self.temp_aggr == 'LSTM':
                     temp_aggregator = nn.LSTM(input_size=self.num_classes, hidden_size=self.num_classes, batch_first=False, bidirectional=True)
                     self.temp_aggregators.append(temp_aggregator)
-                   
+            
             self.mod_nets.append(temp_nets)
          
         if self.mod_aggr == 'MLP':
@@ -112,11 +112,12 @@ def get_fine_tuning_parameters(model, ft_portion):
     elif ft_portion == "last_layer":
         for param in model.module.parameters():
             param.requires_grad = False
-        for net in model.module.cnns:
-            for param in net[0].classifier.parameters():
-                param.requires_grad = True
-        if model.module.aggregator is not None:
-            for param in model.module.aggregator.parameters():
+        for pool_nets in model.module.mod_nets:
+            for net in pool_nets:
+                for param in net[0].classifier.parameters():
+                    param.requires_grad = True
+        if model.module.mod_aggregator is not None:
+            for param in model.module.mod_aggregator.parameters():
                 param.requires_grad = True
         
         return model.parameters()

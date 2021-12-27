@@ -90,7 +90,7 @@ def generate_model_3d(opt):
         print("Total number of trainable parameters: ", pytorch_total_params)
         '''
         
-        if opt.pretrain_path:   
+        if opt.pretrain_path:
             if '.pth' in opt.pretrain_path:
                 print('loading pretrained model {}'.format(opt.pretrain_path))
                 pretrain = torch.load(opt.pretrain_path, map_location=torch.device('cpu'))
@@ -106,7 +106,7 @@ def generate_model_3d(opt):
                     model.load_state_dict(state_dict)
                 else:
                     model.load_state_dict(pretrain['state_dict'])
-            elif opt.pretrain_path:
+            else:
                 opt.pretrain_path = os.path.join(opt.pretrain_path, opt.dataset, opt.model)
                 for i in range(len(opt.modalities)):
                     pretrain_path = '_'.join([opt.dataset, opt.model, opt.modalities[i], 'none', 'best.pth'])
@@ -176,7 +176,7 @@ def generate_model_2d(opt):
     assert opt.model in ['mobilenetv2_2d', 'resnext_2d']
 
 
-    if opt.model == 'mobilenetv2_2d':        
+    if opt.model == 'mobilenetv2_2d':
         from models.consensus_module_2dcnn import get_fine_tuning_parameters
         model = consensus_module_2dcnn.get_model(
             net=opt.model,
@@ -184,6 +184,7 @@ def generate_model_2d(opt):
             n_finetune_classes=opt.n_finetune_classes,
             sample_size=opt.sample_size,
             sample_duration=opt.sample_duration,
+            modalities=opt.modalities,
             mod_aggr=opt.mod_aggr,
             temp_aggr=opt.temp_aggr,
             width_mult=opt.width_mult)
@@ -213,10 +214,25 @@ def generate_model_2d(opt):
         '''
 
         if opt.pretrain_path:
-            print('loading pretrained model {}'.format(opt.pretrain_path))
-            pretrain = torch.load(opt.pretrain_path, map_location=torch.device('cpu'))
-            assert opt.arch == pretrain['arch']
-            model.load_state_dict(pretrain['state_dict'])
+            if '.pth' in opt.pretrain_path:
+                print('loading pretrained model {}'.format(opt.pretrain_path))
+                pretrain = torch.load(opt.pretrain_path, map_location=torch.device('cpu'))
+                assert opt.arch == pretrain['arch']
+                model.load_state_dict(pretrain['state_dict'])
+            else:
+                opt.pretrain_path = os.path.join(opt.pretrain_path, opt.dataset, opt.model)
+                for i in range(len(opt.modalities)):
+                    pretrain_path = '_'.join([opt.dataset, opt.model, opt.modalities[i], opt.temp_aggr, 'none', 'best.pth'])
+                    pretrain_path = os.path.join(opt.pretrain_path, pretrain_path)
+                    print('loading pretrained model {}'.format(pretrain_path))
+                    pretrain = torch.load(pretrain_path, map_location=torch.device('cpu'))
+                    assert opt.arch == pretrain['arch']
+                    # state_dict = {key.replace('module.', ''): value for key, value in pretrain['state_dict'].items()}
+                    state_dict = {key.replace('module.mod_nets.0.', ''): value for key, value in pretrain['state_dict'].items()}
+                    # state_dict = {key.replace('module.cnns.0.0.', ''): value for key, value in pretrain['state_dict'].items()}
+                    # print('mode_nets lenght: {}'.format(len(model.module.mod_nets)))
+                    model.module.mod_nets[i].load_state_dict(state_dict)
+                    # model.module.mod_nets[i].load_state_dict(pretrain['state_dict'])
             
             if opt.test or opt.ft_portion == 'none':
                 return model, model.parameters()
@@ -235,24 +251,25 @@ def generate_model_2d(opt):
                 model.module.aggregator = nn.Sequential(
                     nn.LSTM(opt.n_finetune_classes, opt.n_finetune_classes)
             '''
-            if opt.mod_aggr == 'MLP':
-                model.module.mod_aggregator = nn.Sequential(
-                    # nn.Dropout(0.2),
-                    nn.ReLU(),
-                    nn.Linear(opt.n_finetune_classes * len(opt.modalities), self.n_finetune_classes)
-                )
-                model.module.mod_aggregator = model.module.mod_aggregator.cuda()
-            
-            for i in range(len(opt.modalities)):
-                # change the output size of single cnn
-                for j in range(opt.sample_duration):
-                    model.module.mod_nets[i][j][0].classifier = nn.Sequential(
-                        nn.Dropout(0.2),
-                        nn.Linear(model.module.mod_nets[i][j][0].classifier[1].in_features, opt.n_finetune_classes),
+            if opt.n_classes != opt.n_finetune_classes:
+                if opt.mod_aggr == 'MLP':
+                    model.module.mod_aggregator = nn.Sequential(
+                        # nn.Dropout(0.2),
+                        nn.ReLU(),
+                        nn.Linear(opt.n_finetune_classes * len(opt.modalities), self.n_finetune_classes)
                     )
-                    # print('########## {}° network ##########\n{}################################'.format(i, model.module.cnns[i][0].classifier))
-                    model.module.mod_nets[i][j][0].classifier.cuda()
-                # print('########## CNNs ##########\n{}################################'.format(model.module.cnns))
+                    model.module.mod_aggregator = model.module.mod_aggregator.cuda()
+                
+                for i in range(len(opt.modalities)):
+                    # change the output size of single cnn
+                    for j in range(opt.sample_duration):
+                        model.module.mod_nets[i][j][0].classifier = nn.Sequential(
+                            nn.Dropout(0.2),
+                            nn.Linear(model.module.mod_nets[i][j][0].classifier[1].in_features, opt.n_finetune_classes),
+                        )
+                        # print('########## {}° network ##########\n{}################################'.format(i, model.module.cnns[i][0].classifier))
+                        model.module.mod_nets[i][j][0].classifier.cuda()
+                    # print('########## CNNs ##########\n{}################################'.format(model.module.cnns))
             '''
             else:
                 model.module.aggregator = nn.Linear(model.module.aggregator.in_features, opt.n_finetune_classes)
@@ -321,7 +338,7 @@ def generate_model_ts(opt):
         print("Total number of trainable parameters: ", pytorch_total_params)
         '''
         
-        if opt.pretrain_path:   
+        if opt.pretrain_path:
             if '.pth' in opt.pretrain_path:
                 print('loading pretrained model {}'.format(opt.pretrain_path))
                 pretrain = torch.load(opt.pretrain_path, map_location=torch.device('cpu'))
@@ -357,8 +374,8 @@ def generate_model_ts(opt):
                 
                 # change the output size of single cnn
                 for i in range(len(opt.modalities)):
-                    model.module.nets[i].reset_classifier(opt.n_finetune_classes)
-                    # model.module.cnns[i].classifier.cuda()
+                    model.module.nets[i].model.reset_classifier(opt.n_finetune_classes)
+                    model.module.nets[i].model.get_classifier().cuda()
             
             parameters = get_fine_tuning_parameters(model, opt.ft_portion)
             return model, parameters
