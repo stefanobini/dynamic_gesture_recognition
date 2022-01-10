@@ -33,17 +33,17 @@ def test(data_loader, model, opt, class_names):
 
     model.eval()
 
-    # batch_time = AverageMeter()
-    # data_time = AverageMeter()
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
 
-    # end_time = time.time()
+    end_time = time.time()
     output_buffer = []
     predictions = []
     previous_video_id = ''
     test_results = {'results': {}}
     batch_iter = tqdm(enumerate(data_loader), 'Testing', total=len(data_loader))
     for i, (inputs, targets) in batch_iter:
-        # data_time.update(time.time() - end_time)
+        data_time.update(time.time() - end_time)
         with torch.no_grad():
             inputs = Variable(inputs)
         # print('########### Input ###########\nType: {}\nTensor size: {}\n\n#############################'.format(type(inputs), inputs.size()))
@@ -65,15 +65,15 @@ def test(data_loader, model, opt, class_names):
                 output_buffer = []
             output_buffer.append(outputs[j].data.cpu())
             previous_video_id = targets[j]
-
+        '''
         if (i % 100) == 0:
             with open(
                     os.path.join(opt.result_path, '{}.json'.format(
                         opt.test_subset)), 'w') as f:
                 json.dump(test_results, f)
-
-        # batch_time.update(time.time() - end_time)
-        # end_time = time.time()
+        '''
+        batch_time.update(time.time() - end_time)
+        end_time = time.time()
         '''
         print('[{}/{}]\t'
               'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
@@ -85,6 +85,11 @@ def test(data_loader, model, opt, class_names):
         '''
         # batch_iter.set_description('Testing')
     batch_iter.close()
+    
+    ''' Time analysis '''
+    print('Time {batch_time.avg:.3f}\tData {data_time.avg:.3f}\t'.format(
+                  batch_time=batch_time,
+                  data_time=data_time))
     
     # Save predictions
     predictions = torch.Tensor(predictions)

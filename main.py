@@ -65,7 +65,7 @@ if __name__ == '__main__':
     elif opt.cnn_dim == 0:
         model, parameters = generate_model_ts(opt)      # TimeSformer
         input_shape = (opt.batch_size, len(opt.modalities), opt.sample_duration, 3, opt.sample_size, opt.sample_size)
-    '''
+    #'''
     print('######### Parameters: #########')
     pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     no_train_params = sum(p.numel() for p in model.parameters() if not p.requires_grad)

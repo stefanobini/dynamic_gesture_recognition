@@ -17,7 +17,7 @@ def parse_opts():
     parser.add_argument('--no_cuda', action='store_true', help='If true, cuda is not used.')
     parser.set_defaults(no_cuda=False)
     parser.add_argument('--n_threads', default=16, type=int, help='Number of threads for multi-thread loading')
-    parser.add_argument('--checkpoint', default=10, type=int, help='Trained model is saved at every this epochs.')
+    parser.add_argument('--checkpoint', default=2, type=int, help='Trained model is saved at every this epochs.')
     parser.add_argument('--manual_seed', default=1, type=int, help='Manually set random seed')
 
     ############### INPUT ###############
