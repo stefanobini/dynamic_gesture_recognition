@@ -3,7 +3,7 @@ In each folder containing video frame, create a file that contain the number of 
 python3 utils/n_frames_chalearn_isogd.py datasets/chalearn_isogd_frame_video
 I need to insert a control to check that the length of the video in RGB is equal to that of Depth.
 
-python3 n_frames_nvgesture.py RGB-D_frames
+python3 utils/n_frames_nvgesture.py ../datasets/nvgesture/RGB-D_frames
 '''
 from __future__ import print_function, division
 import os
