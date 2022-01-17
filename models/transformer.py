@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import math
 import matplotlib.pyplot as plt
-%matplotlib inline
+# %matplotlib inline
 
 
 class Attention(nn.Module):
