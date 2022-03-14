@@ -6,3 +6,15 @@ Implementation of the framework used in [Benchmarking CNNs for gesture recogniti
 Il sistema effettua il gesture recognition seguendo the following schema.
 
 ![alt text](https://github.com/stefanobini/gesture_recognition/blob/main/workflow.png)
+
+```bibtext
+@article{bini2022benchmarking,
+  author={Bini, Stefano and Greco, Antonio and Saggese, Alessia and Vento, Mario},
+  booktitle={2022 31th IEEE International Conference on Robot   Human Interactive Communication (RO-MAN)},
+  title={Benchmarking CNNs for gesture recognition on embedded devices equipped by robots},
+  year={2022},
+  volume={},
+  number={},
+  pages={},
+  doi={}
+```
