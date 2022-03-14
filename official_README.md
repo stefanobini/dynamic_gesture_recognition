@@ -7,6 +7,7 @@ Il sistema effettua il gesture recognition seguendo the following schema.
 
 ![alt text](https://github.com/stefanobini/gesture_recognition/blob/main/workflow.png)
 
+Please cite the following [paper](link) if you feel this repository useful.
 ```bibtext
 @article{bini2022benchmarking,
   author={Bini, Stefano and Greco, Antonio and Saggese, Alessia and Vento, Mario},
