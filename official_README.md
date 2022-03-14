@@ -8,6 +8,6 @@ Within this context, the GR algorithm needs to work in real time and over embedd
 Anyway, the analysis related to the trade-off between accuracy and computational burden (for both networks and modalities) becomes important so as to allow GR algorithms to work in industrial robotics applications. 
 We perform a wide benchmarking analysis focusing not only on the accuracy but also on the computational burden, involving two different architectures (2D and 3D), with two different backbones (MobileNet, ResNeXt) and four types of input modalities (RGB, Depth, Optical Flow, Motion History Image) and their combinations.
 
-Questo framework, realizzato in PyTorch, continene il codice utilizzato per effettuare questa analisi, descritta in [Benchmarking CNNs for gesture recognition on embedded devices equipped by robots](link).
+This framework, built in PyTorch, contains the code used to perform this analysis, described in [Benchmarking CNNs for gesture recognition on embedded devices equipped by robots](link).
 
 ![alt text](https://github.com/stefanobini/gesture_recognition/blob/main/workflow.png)
