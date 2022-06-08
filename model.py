@@ -261,6 +261,7 @@ def generate_model_2d(opt):
                     model.module.mod_aggregator = model.module.mod_aggregator.cuda()
                 
                 for i in range(len(opt.modalities)):
+                    '''
                     # change the output size of single cnn
                     for j in range(opt.sample_duration):
                         model.module.mod_nets[i][j][0].classifier = nn.Sequential(
@@ -270,6 +271,11 @@ def generate_model_2d(opt):
                         # print('########## {}° network ##########\n{}################################'.format(i, model.module.cnns[i][0].classifier))
                         model.module.mod_nets[i][j][0].classifier.cuda()
                     # print('########## CNNs ##########\n{}################################'.format(model.module.cnns))
+                    '''
+                    model.module.mod_nets[i][0].classifier = nn.Sequential(
+                        nn.Dropout(0.2),
+                        nn.Linear(model.module.mod_nets[i][0].classifier[1].in_features, opt.n_finetune_classes),
+                    )
             '''
             else:
                 model.module.aggregator = nn.Linear(model.module.aggregator.in_features, opt.n_finetune_classes)

@@ -118,3 +118,34 @@ datasets/**/
 
 # results directory
 /results
+
+# useless file (old repository)
+calculate_FLOP.py
+speed_gpu.py
+/thop/
+
+# not used dataset
+/utils/eval_kinetics.py
+/utils/eval_ucf101.py
+/utils/kinetics_json.py
+/utils/n_frames_kinetics.py
+/utils/n_frames_ucf101_hmdb51.py
+/utils/results.jpg
+/utils/video_*
+
+# not used model
+/models/TimeSformer/
+/models/utils/
+/models/EAB_rfs555.py
+/models/EAN_16f.py
+/models/c3d
+/models/consensus_module_ts
+/models/genotype.py
+/models/NI3D.py
+/models/RAAR3DNet.py
+/models/res3d_clstm_mobilenet.py
+/models/SOI_Tr.py
+/models/shufflenet.py
+/models/shufflenetv2.py
+/models/squeezenet.py
+/models/transformer.py
