@@ -125,6 +125,7 @@ speed_gpu.py
 /thop/
 
 # not used dataset
+/datasets/
 /utils/eval_kinetics.py
 /utils/eval_ucf101.py
 /utils/kinetics_json.py
