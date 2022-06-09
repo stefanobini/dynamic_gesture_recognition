@@ -124,6 +124,9 @@ calculate_FLOP.py
 speed_gpu.py
 /thop/
 
+# not to be published
+useful_commands.txt 
+
 # not used dataset
 /datasets/
 /utils/eval_kinetics.py

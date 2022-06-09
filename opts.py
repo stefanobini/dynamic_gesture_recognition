@@ -17,7 +17,7 @@ def parse_opts():
     parser.add_argument('--no_cuda', action='store_true', help='If true, cuda is not used.')
     parser.set_defaults(no_cuda=False)
     parser.add_argument('--n_threads', default=16, type=int, help='Number of threads for multi-thread loading')
-    parser.add_argument('--checkpoint', default=2, type=int, help='Trained model is saved at every this epochs.')
+    parser.add_argument('--checkpoint', default=1, type=int, help='Trained model is saved at every this epochs.')
     parser.add_argument('--manual_seed', default=1, type=int, help='Manually set random seed')
 
     ############### INPUT ###############
@@ -77,7 +77,7 @@ def parse_opts():
     parser.add_argument('--batch_size', default=128, type=int, help='Batch Size')
     parser.add_argument('--n_epochs', default=250, type=int, help='Number of total epochs to run')
     parser.add_argument('--begin_epoch', default=1, type=int, help='Training begins at this epoch. Previous trained model indicated by resume_path is loaded.')
-    parser.add_argument('--n_val_samples', default=3, type=int, help='Number of validation samples for each activity')
+    parser.add_argument('--n_val_samples', default=1, type=int, help='Number of validation samples for each activity')
     parser.add_argument('--no_softmax_in_test', action='store_true', help='If true, output for each clip is not normalized using softmax.')
     parser.set_defaults(no_softmax_in_test=False)
     parser.add_argument('--SSA_loss', action='store_true', help='If true, Spatiotemporal Semantic Alignment is used to fuse information of each modality during the training.')
